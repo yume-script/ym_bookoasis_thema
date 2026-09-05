@@ -1,0 +1,51 @@
+<div class="tp-container">
+  <div class="tp-header">
+    <div>
+      <h2 class="tp-title">테마</h2>
+      <p class="tp-desc">BookOasis는 다양한 색상의 테마를 지원합니다. 왼쪽 목록에서 테마를 골라 오른쪽에서 실제 색상 미리보기를 확인한 뒤, 마음에 들면 적용하세요.</p>
+    </div>
+  </div>
+
+  <div class="tp-layout">
+    <!-- 왼쪽: 테마 목록 -->
+    <div class="tp-list" id="tp-list">
+      <div class="tp-loading">테마 목록을 불러오는 중...</div>
+    </div>
+
+    <!-- 오른쪽: 선택된 테마 상세 + 미리보기 -->
+    <div class="tp-detail">
+      <div class="tp-detail-header">
+        <div>
+          <h3 id="td-name" class="tp-detail-name">-</h3>
+          <p id="td-desc" class="tp-detail-desc">-</p>
+        </div>
+        <button id="td-apply-btn" class="tp-btn tp-btn-primary" type="button">
+          <i class="fa-solid fa-check"></i> 이 테마 적용
+        </button>
+      </div>
+
+      <div class="tp-preview-section">
+        <h4 class="tp-preview-title">미리보기</h4>
+        <div class="tp-preview-carousel">
+          <button id="td-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="tp-preview-frame-wrap">
+            <iframe id="td-preview-iframe" class="tp-preview-iframe" title="테마 미리보기" sandbox="allow-same-origin"></iframe>
+            <div id="td-preview-label" class="tp-preview-label">대시보드</div>
+          </div>
+          <button id="td-next" class="tp-nav-arrow" type="button" aria-label="다음 미리보기">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="tp-apply-status" class="tp-apply-status" role="status"></div>
+    </div>
+  </div>
+
+  <p class="tp-footnote">
+    <i class="fa-solid fa-circle-info"></i>
+    적용은 서버가 아니라 <strong>이 브라우저(기기)</strong>에 저장됩니다. 다른 브라우저나 기기에서는 각자 다시 적용해야 합니다.
+  </p>
+</div>
