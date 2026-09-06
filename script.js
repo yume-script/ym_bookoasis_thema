@@ -124,6 +124,64 @@
         return vars;
     }
 
+    // 커스텀 테마용 원클릭 프리셋 (빠른 시작용 예시 색상 조합)
+    var PRESETS = [
+        {
+            id: 'excel',
+            label: '엑셀 스타일',
+            desc: '흰 시트 배경 + 엑셀 그린 강조색 + 옅은 회색 그리드 라인',
+            vars: {
+                '--app-bg-main': '#ffffff',
+                '--app-bg-sidebar': '#217346',
+                '--app-bg-card': '#ffffff',
+                '--app-bg-card-hover': '#e8f2ec',
+                '--app-text-primary': '#1e1e1e',
+                '--app-text-muted': '#616161',
+                '--app-text-secondary': '#217346',
+                '--app-accent': '#217346',
+                '--app-accent-hover': '#185c37',
+                '--app-border': '#d0d7de',
+                '--app-border-light': '#e8eaed',
+                '--app-input-bg': '#f3f2f1'
+            }
+        }
+    ];
+
+    function findPreset(id) {
+        for (var i = 0; i < PRESETS.length; i++) { if (PRESETS[i].id === id) return PRESETS[i]; }
+        return null;
+    }
+
+    function applyPreset(presetId) {
+        var preset = findPreset(presetId);
+        if (!preset) return;
+        TOKENS.forEach(function (t) {
+            if (preset.vars[t.key]) customState.vars[t.key] = preset.vars[t.key];
+        });
+        var nameEl = document.getElementById('tc-name');
+        if (nameEl && !nameEl.value.trim()) nameEl.value = preset.label;
+        renderColorGrid();
+        renderCustomPreviewFrame();
+        setCustomStatus('"' + preset.label + '" 프리셋을 적용했습니다. 색상을 더 다듬은 뒤 저장해 주세요.', 'is-success');
+    }
+
+    function renderPresetRow() {
+        var rowEl = document.getElementById('tc-preset-row');
+        if (!rowEl) return;
+        rowEl.innerHTML = '';
+        PRESETS.forEach(function (preset) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tp-preset-btn';
+            btn.title = preset.desc || '';
+            btn.innerHTML =
+                '<span class="tp-preset-swatch" style="background:' + preset.vars['--app-accent'] + ';"></span>' +
+                escapeHtml(preset.label);
+            btn.addEventListener('click', function () { applyPreset(preset.id); });
+            rowEl.appendChild(btn);
+        });
+    }
+
     function generateId() {
         return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
@@ -150,11 +208,14 @@
 
         // 1차: Blob URL로 새 창을 직접 내비게이션 — document.write보다 안정적으로
         // "완전한 문서를 새로 로드"한 것으로 취급되어 내용이 비는 문제가 없다.
+        // [주의] features 문자열(width/height 등)을 반드시 함께 줘야 한다 — 크롬
+        // 계열은 features가 없으면 기본적으로 "새 탭"으로 열어버려서, 창(팝업)
+        // 형태를 의도했다면 크기 지정이 필수다.
         if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && URL.createObjectURL) {
             try {
                 var blob = new Blob([titledHtml], { type: 'text/html;charset=utf-8' });
                 var blobUrl = URL.createObjectURL(blob);
-                var win = window.open(blobUrl, '_blank');
+                var win = window.open(blobUrl, '_blank', 'width=1000,height=680,resizable=yes,scrollbars=yes');
                 if (win) {
                     setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 60000);
                     return true;
@@ -759,6 +820,7 @@
 
         // --- 탭 2: 새 테마 만들기 ---
         customState.themes = loadCustomThemes();
+        renderPresetRow();
         startNewCustomDraft();
 
         var tcPrevBtn = document.getElementById('tc-prev');

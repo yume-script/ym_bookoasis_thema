@@ -495,3 +495,39 @@
     border-radius: 4px;
     padding: 0.05rem 0.35rem;
 }
+
+/* ===== 커스텀 테마 프리셋 버튼 ===== */
+.tp-preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.tp-preset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--app-bg-main);
+    border: 1px solid var(--app-border);
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem 0.4rem 0.5rem;
+    color: var(--app-text-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tp-preset-btn:hover {
+    background: var(--app-bg-card-hover);
+    border-color: var(--app-accent);
+}
+
+.tp-preset-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
