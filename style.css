@@ -425,3 +425,73 @@
     color: var(--app-text-muted);
     font-size: 0.8rem;
 }
+
+/* ===== 미리보기 상단 행 (제목 + 새 창 버튼) / 안내 문구 ===== */
+.tp-preview-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.tp-btn-sm {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.76rem;
+}
+
+.tp-preview-hint {
+    margin: 0.2rem 0 0.5rem 0;
+    font-size: 0.74rem;
+    color: var(--app-text-muted);
+    line-height: 1.5;
+}
+
+/* ===== YAML 업로드 ===== */
+.tp-yaml-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.tp-yaml-help {
+    flex-basis: 100%;
+}
+
+.tp-yaml-help summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--app-text-muted);
+    user-select: none;
+}
+
+.tp-yaml-help[open] summary {
+    color: var(--app-text-primary);
+}
+
+.tp-yaml-example {
+    margin: 0.5rem 0 0 0;
+    padding: 0.75rem;
+    background: var(--app-input-bg);
+    border: 1px solid var(--app-border);
+    border-radius: 6px;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--app-text-muted);
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+.tp-yaml-note {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.74rem;
+    color: var(--app-text-muted);
+}
+
+.tp-yaml-note code {
+    background: var(--app-input-bg);
+    border: 1px solid var(--app-border);
+    border-radius: 4px;
+    padding: 0.05rem 0.35rem;
+}

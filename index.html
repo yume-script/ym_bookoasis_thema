@@ -30,7 +30,13 @@
         </div>
 
         <div class="tp-preview-section">
-          <h4 class="tp-preview-title">미리보기</h4>
+          <div class="tp-preview-title-row">
+            <h4 class="tp-preview-title">미리보기</h4>
+            <button id="td-popup-btn" class="tp-btn tp-btn-secondary tp-btn-sm" type="button">
+              <i class="fa-solid fa-up-right-from-square"></i> 새 창에서 정확히 보기
+            </button>
+          </div>
+          <p class="tp-preview-hint">현재 실제로 적용된 테마에 흑백/고대비 같은 화면 효과가 걸려 있으면, 아래 내장 미리보기에도 그 효과가 함께 보일 수 있습니다. 정확한 색상은 새 창에서 확인하세요.</p>
           <div class="tp-preview-carousel">
             <button id="td-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
               <i class="fa-solid fa-chevron-left"></i>
@@ -76,12 +82,45 @@
         </div>
 
         <div class="tp-preview-section">
+          <h4 class="tp-preview-title">YAML로 테마 불러오기</h4>
+          <div class="tp-yaml-upload-row">
+            <label class="tp-btn tp-btn-secondary" for="tc-yaml-upload">
+              <i class="fa-solid fa-file-arrow-up"></i> YAML 파일 업로드
+            </label>
+            <input type="file" id="tc-yaml-upload" accept=".yml,.yaml,text/yaml,text/x-yaml" hidden />
+            <details class="tp-yaml-help">
+              <summary>파일 형식 예시 보기</summary>
+              <pre class="tp-yaml-example">name: 나만의 다크
+bg-main: "#0f172a"
+bg-sidebar: "#111827"
+bg-card: "#1e293b"
+bg-card-hover: "#243044"
+text-primary: "#f1f5f9"
+text-muted: "#94a3b8"
+text-secondary: "#cbd5e1"
+accent: "#38bdf8"
+accent-hover: "#0ea5e9"
+border: "#334155"
+border-light: "#1e293b"
+input-bg: "#1e293b"</pre>
+              <p class="tp-yaml-note">중첩 없는 단순 <code>key: value</code> 형식만 지원합니다. 필요한 항목만 적어도 되며, 적지 않은 항목은 현재 값이 그대로 유지됩니다.</p>
+            </details>
+          </div>
+        </div>
+
+        <div class="tp-preview-section">
           <h4 class="tp-preview-title">색상 설정</h4>
           <div class="tp-color-grid" id="tc-color-grid"></div>
         </div>
 
         <div class="tp-preview-section">
-          <h4 class="tp-preview-title">미리보기</h4>
+          <div class="tp-preview-title-row">
+            <h4 class="tp-preview-title">미리보기</h4>
+            <button id="tc-popup-btn" class="tp-btn tp-btn-secondary tp-btn-sm" type="button">
+              <i class="fa-solid fa-up-right-from-square"></i> 새 창에서 정확히 보기
+            </button>
+          </div>
+          <p class="tp-preview-hint">현재 실제로 적용된 테마에 흑백/고대비 같은 화면 효과가 걸려 있으면, 아래 내장 미리보기에도 그 효과가 함께 보일 수 있습니다. 정확한 색상은 새 창에서 확인하세요.</p>
           <div class="tp-preview-carousel">
             <button id="tc-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
               <i class="fa-solid fa-chevron-left"></i>

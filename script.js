@@ -128,6 +128,68 @@
         return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
 
+    // 부모 페이지(실제 사이트)에 걸린 CSS filter(예: 이페이퍼 테마의 흑백/고대비
+    // 효과)는 렌더링(합성) 단계에서 자식 요소 전체에 그대로 적용되기 때문에,
+    // 내장 iframe으로는 그 효과를 걷어낼 방법이 없다(특히 grayscale은 색 정보
+    // 자체가 손실되어 CSS로 되돌릴 수도 없음). 유일한 해결책은 부모 문서와
+    // 완전히 분리된 새 창(팝업)에서 여는 것 — 팝업은 별도의 최상위 브라우징
+    // 컨텍스트라 부모의 filter/테마 어떤 것에도 영향받지 않는다.
+    function openPreviewPopup(html, title) {
+        var win = null;
+        try {
+            win = window.open('', '_blank', 'width=1000,height=680,noopener,noreferrer');
+        } catch (e) {
+            win = null;
+        }
+        if (!win) return false;
+        try {
+            win.document.open();
+            win.document.write(html);
+            win.document.close();
+            if (title) win.document.title = title;
+        } catch (e) {
+            return false;
+        }
+        return true;
+    }
+
+    // ---- 아주 단순한 YAML 서브셋 파서 ----
+    // 중첩 매핑/리스트는 지원하지 않는다. 테마 정의는 "키: 값" 색상 쌍의 나열이면
+    // 충분하므로, 외부 라이브러리 없이 한 줄씩 "key: value" 형태만 읽는다.
+    // 지원: 주석(#), 따옴표로 감싼 값('...' 또는 "..."), 빈 줄 무시.
+    function parseSimpleYaml(text) {
+        var result = {};
+        var lines = String(text || '').split(/\r\n|\r|\n/);
+        lines.forEach(function (rawLine) {
+            var line = rawLine.replace(/#.*$/, '').trim();
+            if (!line) return;
+            var idx = line.indexOf(':');
+            if (idx === -1) return;
+            var key = line.slice(0, idx).trim();
+            var value = line.slice(idx + 1).trim();
+            if (value.length >= 2) {
+                var first = value.charAt(0);
+                var last = value.charAt(value.length - 1);
+                if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+                    value = value.slice(1, -1);
+                }
+            }
+            if (key) result[key] = value;
+        });
+        return result;
+    }
+
+    function tokenYamlKey(token) {
+        // '--app-bg-main' -> 'bg-main'
+        return token.key.replace(/^--app-/, '');
+    }
+
+    function isValidColorValue(value) {
+        if (!value) return false;
+        value = String(value).trim();
+        return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) || /^rgba?\(/i.test(value);
+    }
+
     // ---- 공통 스타일 (vw 기반이라 iframe 실제 크기에 비례해서 자동으로 세밀하게 표시됨) ----
     var BASE_CSS =
         'html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden;background:var(--app-bg-main,#0f172a);}' +
@@ -562,6 +624,50 @@
         setCustomStatus('"' + name + '" 테마를 저장했습니다.', 'is-success');
     }
 
+    function applyYamlDataToCustomState(data) {
+        var nameEl = document.getElementById('tc-name');
+        if (data.name && nameEl) {
+            nameEl.value = String(data.name).slice(0, 20);
+        }
+        var appliedCount = 0;
+        TOKENS.forEach(function (token) {
+            var raw = data[tokenYamlKey(token)];
+            if (raw == null || !isValidColorValue(raw)) return;
+            customState.vars[token.key] = toHexColor(raw);
+            appliedCount++;
+        });
+        return appliedCount;
+    }
+
+    function handleYamlUpload(evt) {
+        var input = evt.target;
+        var file = input.files && input.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function () {
+            try {
+                var data = parseSimpleYaml(String(reader.result || ''));
+                var count = applyYamlDataToCustomState(data);
+                if (count === 0) {
+                    setCustomStatus('YAML 파일에서 인식 가능한 색상 값을 찾지 못했습니다. (예: accent: "#38bdf8")', 'is-error');
+                } else {
+                    renderColorGrid();
+                    renderCustomPreviewFrame();
+                    setCustomStatus(count + '개 색상 값을 YAML 파일에서 불러왔습니다. 확인 후 저장해 주세요.', 'is-success');
+                }
+            } catch (e) {
+                setCustomStatus('YAML 파일을 읽는 중 오류가 발생했습니다.', 'is-error');
+            }
+            input.value = ''; // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 초기화
+        };
+        reader.onerror = function () {
+            setCustomStatus('파일을 읽지 못했습니다.', 'is-error');
+            input.value = '';
+        };
+        reader.readAsText(file, 'utf-8');
+    }
+
     function applyCustomTheme() {
         var vars = customState.vars;
         var styleEl = document.getElementById(CUSTOM_OVERRIDE_STYLE_ID);
@@ -614,9 +720,17 @@
         var prevBtn = document.getElementById('td-prev');
         var nextBtn = document.getElementById('td-next');
         var applyBtn = document.getElementById('td-apply-btn');
+        var popupBtn = document.getElementById('td-popup-btn');
         if (prevBtn) prevBtn.addEventListener('click', function () { navigatePreview(-1); });
         if (nextBtn) nextBtn.addEventListener('click', function () { navigatePreview(1); });
         if (applyBtn) applyBtn.addEventListener('click', applySelectedTheme);
+        if (popupBtn) popupBtn.addEventListener('click', function () {
+            var theme = findTheme(state.selectedTheme);
+            var html = buildMockupHtml(state.selectedTheme, VIEWS[state.viewIndex]);
+            if (!openPreviewPopup(html, theme.label + ' 미리보기')) {
+                setStatus('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제한 뒤 다시 시도해 주세요.', 'is-error');
+            }
+        });
 
         // --- 탭 2: 새 테마 만들기 ---
         customState.themes = loadCustomThemes();
@@ -626,10 +740,21 @@
         var tcNextBtn = document.getElementById('tc-next');
         var tcSaveBtn = document.getElementById('tc-save-btn');
         var tcApplyBtn = document.getElementById('tc-apply-btn');
+        var tcPopupBtn = document.getElementById('tc-popup-btn');
+        var tcYamlInput = document.getElementById('tc-yaml-upload');
         if (tcPrevBtn) tcPrevBtn.addEventListener('click', function () { navigateCustomPreview(-1); });
         if (tcNextBtn) tcNextBtn.addEventListener('click', function () { navigateCustomPreview(1); });
         if (tcSaveBtn) tcSaveBtn.addEventListener('click', saveCustomTheme);
         if (tcApplyBtn) tcApplyBtn.addEventListener('click', applyCustomTheme);
+        if (tcYamlInput) tcYamlInput.addEventListener('change', handleYamlUpload);
+        if (tcPopupBtn) tcPopupBtn.addEventListener('click', function () {
+            var html = buildCustomMockupHtml(customState.vars, VIEWS[customState.viewIndex]);
+            var nameEl = document.getElementById('tc-name');
+            var title = (nameEl && nameEl.value.trim()) || '커스텀 테마';
+            if (!openPreviewPopup(html, title + ' 미리보기')) {
+                setCustomStatus('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제한 뒤 다시 시도해 주세요.', 'is-error');
+            }
+        });
 
         // --- 탭 전환 버튼 ---
         var tabButtons = document.querySelectorAll('.tp-tab');
