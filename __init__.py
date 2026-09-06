@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
-from .theme_previewer import ThemePreviewerProvider
+from .ym_bookoasis_thema import ThemePreviewerProvider
 
 __all__ = ["ThemePreviewerProvider"]
