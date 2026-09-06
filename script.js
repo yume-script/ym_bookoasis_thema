@@ -129,10 +129,10 @@
         {
             id: 'excel',
             label: '엑셀 스타일',
-            desc: '흰 시트 배경 + 엑셀 그린 강조색 + 옅은 회색 그리드 라인',
+            desc: '흰 시트 배경 + 엑셀 그린 강조색 + 옅은 회색 그리드 라인 (전체를 밝은 톤으로 통일해 대비 확보)',
             vars: {
                 '--app-bg-main': '#ffffff',
-                '--app-bg-sidebar': '#217346',
+                '--app-bg-sidebar': '#f3f2f1',
                 '--app-bg-card': '#ffffff',
                 '--app-bg-card-hover': '#e8f2ec',
                 '--app-text-primary': '#1e1e1e',
