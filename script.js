@@ -243,12 +243,17 @@
     // 중첩 매핑/리스트는 지원하지 않는다. 테마 정의는 "키: 값" 색상 쌍의 나열이면
     // 충분하므로, 외부 라이브러리 없이 한 줄씩 "key: value" 형태만 읽는다.
     // 지원: 주석(#), 따옴표로 감싼 값('...' 또는 "..."), 빈 줄 무시.
+    // 지원: 전체 줄이 '#'로 시작하는 주석, 빈 줄 무시, 따옴표로 감싼 값.
+    // [주의] 색상 값 자체가 "#fee500"처럼 '#'을 포함하므로, "줄 중간의 #부터
+    // 끝까지 잘라내는" 방식은 색상 값을 통째로 망가뜨린다. 그래서 주석은
+    // "줄의 첫 글자가 #인 경우"(온전한 주석 줄)만 인정하고, 값 안의 #은
+    // 절대 건드리지 않는다.
     function parseSimpleYaml(text) {
         var result = {};
         var lines = String(text || '').split(/\r\n|\r|\n/);
         lines.forEach(function (rawLine) {
-            var line = rawLine.replace(/#.*$/, '').trim();
-            if (!line) return;
+            var line = rawLine.trim();
+            if (!line || line.charAt(0) === '#') return;
             var idx = line.indexOf(':');
             if (idx === -1) return;
             var key = line.slice(0, idx).trim();
