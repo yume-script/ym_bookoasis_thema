@@ -260,3 +260,168 @@
     align-items: center;
     gap: 0.4rem;
 }
+
+/* ===== 탭 UI ===== */
+.tp-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.1rem;
+    border-bottom: 1px solid var(--app-border);
+}
+
+.tp-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--app-text-muted);
+    cursor: pointer;
+}
+
+.tp-tab:hover {
+    color: var(--app-text-primary);
+}
+
+.tp-tab.is-active {
+    color: var(--app-text-primary);
+    border-bottom-color: var(--app-accent);
+}
+
+.tp-panel[hidden] {
+    display: none;
+}
+
+/* ===== 새 테마 만들기 ===== */
+.tp-input {
+    width: 100%;
+    background: var(--app-input-bg);
+    border: 1px solid var(--app-border);
+    border-radius: 6px;
+    padding: 0.5rem 0.7rem;
+    color: var(--app-text-primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.tp-input:focus {
+    outline: none;
+    border-color: var(--app-accent);
+}
+
+.tp-btn-secondary {
+    background: var(--app-bg-card-hover);
+    color: var(--app-text-primary);
+    border: 1px solid var(--app-border);
+}
+
+.tp-btn-secondary:hover {
+    background: var(--app-input-bg);
+}
+
+.tp-color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.6rem 0.8rem;
+}
+
+.tp-color-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--app-bg-main);
+    border: 1px solid var(--app-border-light);
+    border-radius: 6px;
+    padding: 0.4rem 0.55rem;
+}
+
+.tp-color-field input[type="color"] {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.tp-color-field-label {
+    font-size: 0.72rem;
+    color: var(--app-text-muted);
+    flex: 1;
+    line-height: 1.3;
+}
+
+.tp-custom-list {
+    background: var(--app-bg-card);
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 560px;
+    overflow-y: auto;
+    align-self: start;
+}
+
+.tp-custom-new-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    border: 1px dashed var(--app-border);
+    background: transparent;
+    color: var(--app-text-muted);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tp-custom-new-btn:hover {
+    background: var(--app-bg-card-hover);
+    color: var(--app-text-primary);
+}
+
+.tp-custom-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.tp-custom-item-row .tp-list-item {
+    flex: 1;
+    min-width: 0;
+}
+
+.tp-custom-delete-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--app-border);
+    background: transparent;
+    color: var(--app-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tp-custom-delete-btn:hover {
+    background: var(--app-bg-card-hover);
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.tp-custom-empty {
+    text-align: center;
+    padding: 1.25rem 0.5rem;
+    color: var(--app-text-muted);
+    font-size: 0.8rem;
+}

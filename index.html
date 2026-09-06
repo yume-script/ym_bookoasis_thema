@@ -2,50 +2,107 @@
   <div class="tp-header">
     <div>
       <h2 class="tp-title">테마</h2>
-      <p class="tp-desc">BookOasis는 다양한 색상의 테마를 지원합니다. 왼쪽 목록에서 테마를 골라 오른쪽에서 실제 색상 미리보기를 확인한 뒤, 마음에 들면 적용하세요.</p>
+      <p class="tp-desc">BookOasis는 다양한 색상의 테마를 지원합니다. 갤러리에서 기본 제공 테마를 미리 보거나, 직접 색상을 골라 나만의 테마를 만들어보세요.</p>
     </div>
   </div>
 
-  <div class="tp-layout">
-    <!-- 왼쪽: 테마 목록 -->
-    <div class="tp-list" id="tp-list">
-      <div class="tp-loading">테마 목록을 불러오는 중...</div>
-    </div>
+  <div class="tp-tabs" role="tablist">
+    <button class="tp-tab is-active" data-tab="gallery" type="button" role="tab" aria-selected="true">테마 갤러리</button>
+    <button class="tp-tab" data-tab="create" type="button" role="tab" aria-selected="false">+ 새 테마 만들기</button>
+  </div>
 
-    <!-- 오른쪽: 선택된 테마 상세 + 미리보기 -->
-    <div class="tp-detail">
-      <div class="tp-detail-header">
-        <div>
-          <h3 id="td-name" class="tp-detail-name">-</h3>
-          <p id="td-desc" class="tp-detail-desc">-</p>
-        </div>
-        <button id="td-apply-btn" class="tp-btn tp-btn-primary" type="button">
-          <i class="fa-solid fa-check"></i> 이 테마 적용
-        </button>
+  <!-- ===== 탭 1: 테마 갤러리 (기존 8종 테마) ===== -->
+  <div id="tp-panel-gallery" class="tp-panel">
+    <div class="tp-layout">
+      <div class="tp-list" id="tp-list">
+        <div class="tp-loading">테마 목록을 불러오는 중...</div>
       </div>
 
-      <div class="tp-preview-section">
-        <h4 class="tp-preview-title">미리보기</h4>
-        <div class="tp-preview-carousel">
-          <button id="td-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-          <div class="tp-preview-frame-wrap">
-            <iframe id="td-preview-iframe" class="tp-preview-iframe" title="테마 미리보기" sandbox="allow-same-origin"></iframe>
-            <div id="td-preview-label" class="tp-preview-label">대시보드</div>
+      <div class="tp-detail">
+        <div class="tp-detail-header">
+          <div>
+            <h3 id="td-name" class="tp-detail-name">-</h3>
+            <p id="td-desc" class="tp-detail-desc">-</p>
           </div>
-          <button id="td-next" class="tp-nav-arrow" type="button" aria-label="다음 미리보기">
-            <i class="fa-solid fa-chevron-right"></i>
+          <button id="td-apply-btn" class="tp-btn tp-btn-primary" type="button">
+            <i class="fa-solid fa-check"></i> 이 테마 적용
           </button>
         </div>
+
+        <div class="tp-preview-section">
+          <h4 class="tp-preview-title">미리보기</h4>
+          <div class="tp-preview-carousel">
+            <button id="td-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="tp-preview-frame-wrap">
+              <iframe id="td-preview-iframe" class="tp-preview-iframe" title="테마 미리보기" sandbox="allow-same-origin"></iframe>
+              <div id="td-preview-label" class="tp-preview-label">대시보드</div>
+            </div>
+            <button id="td-next" class="tp-nav-arrow" type="button" aria-label="다음 미리보기">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="tp-apply-status" class="tp-apply-status" role="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 탭 2: 새 테마 만들기 (커스텀 테마) ===== -->
+  <div id="tp-panel-create" class="tp-panel" hidden>
+    <div class="tp-layout">
+      <div class="tp-custom-list" id="tc-list">
+        <button id="tc-new-btn" class="tp-custom-new-btn" type="button">
+          <i class="fa-solid fa-plus"></i> 새로 만들기
+        </button>
+        <!-- 저장된 커스텀 테마 목록이 여기에 JS로 렌더링됩니다 -->
       </div>
 
-      <div id="tp-apply-status" class="tp-apply-status" role="status"></div>
+      <div class="tp-detail">
+        <div class="tp-detail-header">
+          <div style="flex:1; min-width:220px;">
+            <input id="tc-name" class="tp-input" type="text" placeholder="테마 이름 (예: 나만의 다크)" maxlength="20" />
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button id="tc-save-btn" class="tp-btn tp-btn-secondary" type="button">
+              <i class="fa-solid fa-floppy-disk"></i> 저장
+            </button>
+            <button id="tc-apply-btn" class="tp-btn tp-btn-primary" type="button">
+              <i class="fa-solid fa-check"></i> 이 테마 적용
+            </button>
+          </div>
+        </div>
+
+        <div class="tp-preview-section">
+          <h4 class="tp-preview-title">색상 설정</h4>
+          <div class="tp-color-grid" id="tc-color-grid"></div>
+        </div>
+
+        <div class="tp-preview-section">
+          <h4 class="tp-preview-title">미리보기</h4>
+          <div class="tp-preview-carousel">
+            <button id="tc-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="tp-preview-frame-wrap">
+              <iframe id="tc-preview-iframe" class="tp-preview-iframe" title="커스텀 테마 미리보기" sandbox="allow-same-origin"></iframe>
+              <div id="tc-preview-label" class="tp-preview-label">대시보드</div>
+            </div>
+            <button id="tc-next" class="tp-nav-arrow" type="button" aria-label="다음 미리보기">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="tc-status" class="tp-apply-status" role="status"></div>
+      </div>
     </div>
   </div>
 
   <p class="tp-footnote">
     <i class="fa-solid fa-circle-info"></i>
-    적용은 서버가 아니라 <strong>이 브라우저(기기)</strong>에 저장됩니다. 다른 브라우저나 기기에서는 각자 다시 적용해야 합니다.
+    테마 적용은 서버가 아니라 <strong>이 브라우저(기기)</strong>에 저장됩니다. 커스텀 테마의 "적용"은 현재 세션에만 즉시 반영되며, 새로고침하면 초기화됩니다 — 계속 쓰려면 저장해두고 다시 적용해 주세요.
   </p>
 </div>
