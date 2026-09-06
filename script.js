@@ -134,23 +134,48 @@
     // 자체가 손실되어 CSS로 되돌릴 수도 없음). 유일한 해결책은 부모 문서와
     // 완전히 분리된 새 창(팝업)에서 여는 것 — 팝업은 별도의 최상위 브라우징
     // 컨텍스트라 부모의 filter/테마 어떤 것에도 영향받지 않는다.
+    //
+    // [주의] window.open()에 'noopener'를 넣으면 스펙상 반환값이 항상 null이
+    // 되어(실제로 창은 열렸는데도) "팝업 차단됨"으로 오판하게 된다. 그래서
+    // noopener는 쓰지 않는다 — 어차피 우리가 만든 신뢰 가능한 로컬 콘텐츠라
+    // window.opener 노출로 인한 보안 이슈가 없다.
     function openPreviewPopup(html, title) {
-        var win = null;
-        try {
-            win = window.open('', '_blank', 'width=1000,height=680,noopener,noreferrer');
-        } catch (e) {
-            win = null;
+        var titledHtml = html;
+        if (title) {
+            var safeTitle = escapeHtml(title);
+            if (titledHtml.indexOf('<head>') !== -1) {
+                titledHtml = titledHtml.replace('<head>', '<head><title>' + safeTitle + '</title>');
+            }
         }
-        if (!win) return false;
+
+        // 1차: Blob URL로 새 창을 직접 내비게이션 — document.write보다 안정적으로
+        // "완전한 문서를 새로 로드"한 것으로 취급되어 내용이 비는 문제가 없다.
+        if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && URL.createObjectURL) {
+            try {
+                var blob = new Blob([titledHtml], { type: 'text/html;charset=utf-8' });
+                var blobUrl = URL.createObjectURL(blob);
+                var win = window.open(blobUrl, '_blank');
+                if (win) {
+                    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 60000);
+                    return true;
+                }
+                URL.revokeObjectURL(blobUrl);
+            } catch (e) {
+                // 아래 2차 폴백으로 진행
+            }
+        }
+
+        // 2차 폴백: document.write 방식 (Blob API를 못 쓰는 환경 대비)
         try {
-            win.document.open();
-            win.document.write(html);
-            win.document.close();
-            if (title) win.document.title = title;
-        } catch (e) {
+            var win2 = window.open('', '_blank', 'width=1000,height=680');
+            if (!win2) return false;
+            win2.document.open();
+            win2.document.write(titledHtml);
+            win2.document.close();
+            return true;
+        } catch (e2) {
             return false;
         }
-        return true;
     }
 
     // ---- 아주 단순한 YAML 서브셋 파서 ----
