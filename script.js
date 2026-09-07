@@ -4,22 +4,15 @@
 // <head>의 부트 스크립트가 이 값을 읽어 <html data-app-theme="..."> 로 반영합니다.
 // 이 파일은 그 값을 직접 읽고 씁니다(서버 API 호출 없음).
 //
-// 미리보기는 메인 페이지를 직접 바꾸지 않고, 실제 사이트 CSS를 불러오는 별도
-// iframe 문서 안에서 data-app-theme(또는 커스텀 변수)만 바꿔서 진짜 색상으로
-// 상세한 목업을 렌더링합니다. 모든 치수는 vw 단위라 iframe 실제 렌더 크기가
-// 달라져도 비율대로 자동 확대/축소됩니다.
-//
-// [버그 수정 메모] 기존에는 /api/media/settings/custom-themes.css 도 함께
-// 불러왔는데, 이 파일은 "현재 활성화된 테마"에 대한 사용자 커스텀 오버라이드를
-// data-app-theme 속성 조건 없이 :root에 무조건 내려주는 것으로 보여, 다른 테마를
-// 미리보기해도 원래(현재) 테마의 커스텀 색이 섞여 나오는 원인이 되었습니다.
-// 그래서 내장 테마 미리보기는 style.css 하나만 사용하도록 수정했습니다.
+// 미리보기는 메인 페이지를 직접 바꾸지 않고, 실제 사이트 CSS(/static/css/style.css,
+// /api/media/settings/custom-themes.css)를 불러오는 별도 iframe 문서 안에서
+// data-app-theme만 바꿔서 진짜 색상으로 상세한 목업을 렌더링합니다.
+// 모든 치수는 vw 단위라 iframe 실제 렌더 크기가 달라져도 비율대로 자동 확대/축소됩니다.
 (function () {
     var STORAGE_KEY = 'app_dashboard_theme';
     var CSS_HREFS = [
-        '/static/css/style.css'
-        // 주의: '/api/media/settings/custom-themes.css'는 의도적으로 제외함.
-        // (위 상단 주석 참고 — 다른 테마 미리보기 색상 오염의 원인으로 보임)
+        '/static/css/style.css',
+        '/api/media/settings/custom-themes.css'
     ];
 
     var THEMES = [
@@ -38,25 +31,41 @@
     var SIDEBAR_MENU = ['Home', '최근 읽은 도서', '즐겨찾기', '컬렉션', '스마트 추천', '플러그인', '전체보기'];
     var BOOK_TITLES = ['나 혼자만 레벨업', '움직이지 않는 그림자', '그는 친구', 'I LOVE YOU', '오모리', '완간 미드나잇', '오늘만 사는 기사', '아내는 나를'];
 
-    // 커스텀(사용자 생성) 테마 저장 관련
-    var CUSTOM_THEMES_KEY = 'bookoasis_theme_previewer_custom_themes';
-    var CUSTOM_OVERRIDE_STYLE_ID = 'tp-custom-theme-override-style';
-
-    // 커스텀 테마 편집 대상 디자인 토큰 (가이드 문서의 전역 CSS 변수 12종)
-    var TOKENS = [
-        { key: '--app-bg-main', label: '메인 배경' },
-        { key: '--app-bg-sidebar', label: '사이드바 배경' },
-        { key: '--app-bg-card', label: '카드 배경' },
-        { key: '--app-bg-card-hover', label: '카드 호버 배경' },
-        { key: '--app-text-primary', label: '기본 텍스트' },
-        { key: '--app-text-muted', label: '보조 텍스트' },
-        { key: '--app-text-secondary', label: '강조 보조 텍스트' },
-        { key: '--app-accent', label: '강조색' },
-        { key: '--app-accent-hover', label: '강조색 호버' },
-        { key: '--app-border', label: '테두리' },
-        { key: '--app-border-light', label: '옅은 구분선' },
-        { key: '--app-input-bg', label: '입력창 배경' }
+    // ---- 커스텀 테마 만들기 ----
+    var CUSTOM_STORAGE_KEY = 'app_custom_theme_colors';
+    var CUSTOM_TOKENS = [
+        { key: 'app-bg-main', label: '메인 배경', sub: '전체 배경색' },
+        { key: 'app-bg-sidebar', label: '사이드바 배경', sub: '사이드바 · 상단바' },
+        { key: 'app-bg-card', label: '카드 배경', sub: '위젯 · 표 · 폼 박스' },
+        { key: 'app-bg-card-hover', label: '카드 호버 배경', sub: '마우스 오버 시' },
+        { key: 'app-text-primary', label: '기본 텍스트', sub: '제목 · 본문' },
+        { key: 'app-text-muted', label: '보조 텍스트', sub: '설명 · 타임스탬프' },
+        { key: 'app-text-secondary', label: '강조 보조 텍스트', sub: '서브 타이틀' },
+        { key: 'app-accent', label: '강조색', sub: '버튼 · 활성 탭' },
+        { key: 'app-accent-hover', label: '강조 호버색', sub: '버튼 마우스 오버' },
+        { key: 'app-border', label: '테두리', sub: '카드 · 입력창 테두리' },
+        { key: 'app-border-light', label: '연한 테두리', sub: '항목 구분선' },
+        { key: 'app-input-bg', label: '입력창 배경', sub: 'input · select' }
     ];
+    var DEFAULT_CUSTOM_COLORS = {
+        'app-bg-main': '#0f172a',
+        'app-bg-sidebar': '#111827',
+        'app-bg-card': '#1e293b',
+        'app-bg-card-hover': '#243044',
+        'app-text-primary': '#f1f5f9',
+        'app-text-muted': '#94a3b8',
+        'app-text-secondary': '#cbd5e1',
+        'app-accent': '#a855f7',
+        'app-accent-hover': '#9333ea',
+        'app-border': '#334155',
+        'app-border-light': '#1e293b',
+        'app-input-bg': '#1e293b'
+    };
+
+    var customState = {
+        colors: null,
+        viewIndex: 0
+    };
 
     var state = {
         savedTheme: null,
@@ -64,14 +73,6 @@
         viewIndex: 0
     };
 
-    var customState = {
-        themes: [],       // [{ id, name, vars: {token: hex} }]
-        editingId: null,  // null = 저장되지 않은 새 초안
-        vars: {},
-        viewIndex: 0
-    };
-
-    // ---- 공통 유틸 ----
     function readSavedTheme() {
         try { return localStorage.getItem(STORAGE_KEY) || 'purple'; } catch (e) { return 'purple'; }
     }
@@ -89,196 +90,6 @@
         // 테마의 accent 색 하나로도 색조를 돌려 여러 권의 표지처럼 보이게 함
         var hue = (index * 47) % 360;
         return 'background:var(--app-accent,#a855f7); filter:hue-rotate(' + hue + 'deg) saturate(0.85);';
-    }
-
-    function toHexColor(value) {
-        if (!value) return '#000000';
-        value = value.trim();
-        if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) {
-            if (value.length === 4) {
-                return ('#' + value[1] + value[1] + value[2] + value[2] + value[3] + value[3]).toLowerCase();
-            }
-            return value.toLowerCase();
-        }
-        var m = value.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-        if (m) {
-            var r = parseInt(m[1], 10), g = parseInt(m[2], 10), b = parseInt(m[3], 10);
-            return '#' + [r, g, b].map(function (n) {
-                return ('0' + Math.max(0, Math.min(255, n)).toString(16)).slice(-2);
-            }).join('');
-        }
-        return '#000000';
-    }
-
-    function readCurrentVarsAsDefaults() {
-        // "새로 만들기"를 누른 시점의 실제 화면(현재 적용된 테마)의 색을
-        // 출발점으로 채워줘서, 사용자가 처음부터 12개 색을 전부 고르지 않고
-        // 마음에 드는 부분만 바꿀 수 있게 함.
-        var computed = null;
-        try { computed = getComputedStyle(document.documentElement); } catch (e) { computed = null; }
-        var vars = {};
-        TOKENS.forEach(function (t) {
-            var raw = computed ? computed.getPropertyValue(t.key) : '';
-            vars[t.key] = toHexColor(raw);
-        });
-        return vars;
-    }
-
-    // 커스텀 테마용 원클릭 프리셋 (빠른 시작용 예시 색상 조합)
-    var PRESETS = [
-        {
-            id: 'excel',
-            label: '엑셀 스타일',
-            desc: '흰 시트 배경 + 엑셀 그린 강조색 + 옅은 회색 그리드 라인 (전체를 밝은 톤으로 통일해 대비 확보)',
-            vars: {
-                '--app-bg-main': '#ffffff',
-                '--app-bg-sidebar': '#f3f2f1',
-                '--app-bg-card': '#ffffff',
-                '--app-bg-card-hover': '#e8f2ec',
-                '--app-text-primary': '#1e1e1e',
-                '--app-text-muted': '#616161',
-                '--app-text-secondary': '#217346',
-                '--app-accent': '#217346',
-                '--app-accent-hover': '#185c37',
-                '--app-border': '#d0d7de',
-                '--app-border-light': '#e8eaed',
-                '--app-input-bg': '#f3f2f1'
-            }
-        }
-    ];
-
-    function findPreset(id) {
-        for (var i = 0; i < PRESETS.length; i++) { if (PRESETS[i].id === id) return PRESETS[i]; }
-        return null;
-    }
-
-    function applyPreset(presetId) {
-        var preset = findPreset(presetId);
-        if (!preset) return;
-        TOKENS.forEach(function (t) {
-            if (preset.vars[t.key]) customState.vars[t.key] = preset.vars[t.key];
-        });
-        var nameEl = document.getElementById('tc-name');
-        if (nameEl && !nameEl.value.trim()) nameEl.value = preset.label;
-        renderColorGrid();
-        renderCustomPreviewFrame();
-        setCustomStatus('"' + preset.label + '" 프리셋을 적용했습니다. 색상을 더 다듬은 뒤 저장해 주세요.', 'is-success');
-    }
-
-    function renderPresetRow() {
-        var rowEl = document.getElementById('tc-preset-row');
-        if (!rowEl) return;
-        rowEl.innerHTML = '';
-        PRESETS.forEach(function (preset) {
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'tp-preset-btn';
-            btn.title = preset.desc || '';
-            btn.innerHTML =
-                '<span class="tp-preset-swatch" style="background:' + preset.vars['--app-accent'] + ';"></span>' +
-                escapeHtml(preset.label);
-            btn.addEventListener('click', function () { applyPreset(preset.id); });
-            rowEl.appendChild(btn);
-        });
-    }
-
-    function generateId() {
-        return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    }
-
-    // 부모 페이지(실제 사이트)에 걸린 CSS filter(예: 이페이퍼 테마의 흑백/고대비
-    // 효과)는 렌더링(합성) 단계에서 자식 요소 전체에 그대로 적용되기 때문에,
-    // 내장 iframe으로는 그 효과를 걷어낼 방법이 없다(특히 grayscale은 색 정보
-    // 자체가 손실되어 CSS로 되돌릴 수도 없음). 유일한 해결책은 부모 문서와
-    // 완전히 분리된 새 창(팝업)에서 여는 것 — 팝업은 별도의 최상위 브라우징
-    // 컨텍스트라 부모의 filter/테마 어떤 것에도 영향받지 않는다.
-    //
-    // [주의] window.open()에 'noopener'를 넣으면 스펙상 반환값이 항상 null이
-    // 되어(실제로 창은 열렸는데도) "팝업 차단됨"으로 오판하게 된다. 그래서
-    // noopener는 쓰지 않는다 — 어차피 우리가 만든 신뢰 가능한 로컬 콘텐츠라
-    // window.opener 노출로 인한 보안 이슈가 없다.
-    function openPreviewPopup(html, title) {
-        var titledHtml = html;
-        if (title) {
-            var safeTitle = escapeHtml(title);
-            if (titledHtml.indexOf('<head>') !== -1) {
-                titledHtml = titledHtml.replace('<head>', '<head><title>' + safeTitle + '</title>');
-            }
-        }
-
-        // 1차: Blob URL로 새 창을 직접 내비게이션 — document.write보다 안정적으로
-        // "완전한 문서를 새로 로드"한 것으로 취급되어 내용이 비는 문제가 없다.
-        // [주의] features 문자열(width/height 등)을 반드시 함께 줘야 한다 — 크롬
-        // 계열은 features가 없으면 기본적으로 "새 탭"으로 열어버려서, 창(팝업)
-        // 형태를 의도했다면 크기 지정이 필수다.
-        if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && URL.createObjectURL) {
-            try {
-                var blob = new Blob([titledHtml], { type: 'text/html;charset=utf-8' });
-                var blobUrl = URL.createObjectURL(blob);
-                var win = window.open(blobUrl, '_blank', 'width=1000,height=680,resizable=yes,scrollbars=yes');
-                if (win) {
-                    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 60000);
-                    return true;
-                }
-                URL.revokeObjectURL(blobUrl);
-            } catch (e) {
-                // 아래 2차 폴백으로 진행
-            }
-        }
-
-        // 2차 폴백: document.write 방식 (Blob API를 못 쓰는 환경 대비)
-        try {
-            var win2 = window.open('', '_blank', 'width=1000,height=680');
-            if (!win2) return false;
-            win2.document.open();
-            win2.document.write(titledHtml);
-            win2.document.close();
-            return true;
-        } catch (e2) {
-            return false;
-        }
-    }
-
-    // ---- 아주 단순한 YAML 서브셋 파서 ----
-    // 중첩 매핑/리스트는 지원하지 않는다. 테마 정의는 "키: 값" 색상 쌍의 나열이면
-    // 충분하므로, 외부 라이브러리 없이 한 줄씩 "key: value" 형태만 읽는다.
-    // 지원: 주석(#), 따옴표로 감싼 값('...' 또는 "..."), 빈 줄 무시.
-    // 지원: 전체 줄이 '#'로 시작하는 주석, 빈 줄 무시, 따옴표로 감싼 값.
-    // [주의] 색상 값 자체가 "#fee500"처럼 '#'을 포함하므로, "줄 중간의 #부터
-    // 끝까지 잘라내는" 방식은 색상 값을 통째로 망가뜨린다. 그래서 주석은
-    // "줄의 첫 글자가 #인 경우"(온전한 주석 줄)만 인정하고, 값 안의 #은
-    // 절대 건드리지 않는다.
-    function parseSimpleYaml(text) {
-        var result = {};
-        var lines = String(text || '').split(/\r\n|\r|\n/);
-        lines.forEach(function (rawLine) {
-            var line = rawLine.trim();
-            if (!line || line.charAt(0) === '#') return;
-            var idx = line.indexOf(':');
-            if (idx === -1) return;
-            var key = line.slice(0, idx).trim();
-            var value = line.slice(idx + 1).trim();
-            if (value.length >= 2) {
-                var first = value.charAt(0);
-                var last = value.charAt(value.length - 1);
-                if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
-                    value = value.slice(1, -1);
-                }
-            }
-            if (key) result[key] = value;
-        });
-        return result;
-    }
-
-    function tokenYamlKey(token) {
-        // '--app-bg-main' -> 'bg-main'
-        return token.key.replace(/^--app-/, '');
-    }
-
-    function isValidColorValue(value) {
-        if (!value) return false;
-        value = String(value).trim();
-        return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) || /^rgba?\(/i.test(value);
     }
 
     // ---- 공통 스타일 (vw 기반이라 iframe 실제 크기에 비례해서 자동으로 세밀하게 표시됨) ----
@@ -325,7 +136,30 @@
         '.mk-progress-track{width:3.2vw;height:0.4vw;border-radius:999px;background:var(--app-border-light,#334155);overflow:hidden;flex-shrink:0;}' +
         '.mk-progress-fill{height:100%;background:var(--app-accent,#a855f7);}';
 
-    // ---- 목업 마크업 (내장 테마/커스텀 테마 미리보기 공통 사용) ----
+    function buildMockupHtml(themeValue, view) {
+        var cssLinks = CSS_HREFS.map(function (href) {
+            return '<link rel="stylesheet" href="' + href + '">';
+        }).join('');
+        var body = view === 'detail' ? buildDetailMockupBody() : buildDashboardMockupBody();
+        return (
+            '<!DOCTYPE html><html data-app-theme="' + themeValue + '">' +
+            '<head><meta charset="UTF-8">' + cssLinks + '<style>' + BASE_CSS + '</style></head>' +
+            '<body>' + body + '</body></html>'
+        );
+    }
+
+    function buildCustomMockupHtml(colors, view) {
+        var varsCss = ':root{' + CUSTOM_TOKENS.map(function (t) {
+            return '--' + t.key + ':' + (colors[t.key] || DEFAULT_CUSTOM_COLORS[t.key]) + ';';
+        }).join('') + '}';
+        var body = view === 'detail' ? buildDetailMockupBody() : buildDashboardMockupBody();
+        return (
+            '<!DOCTYPE html><html>' +
+            '<head><meta charset="UTF-8"><style>' + varsCss + BASE_CSS + '</style></head>' +
+            '<body>' + body + '</body></html>'
+        );
+    }
+
     function buildSidebar(activeIndex) {
         var items = SIDEBAR_MENU.map(function (label, i) {
             return '<div class="mk-menu' + (i === activeIndex ? ' active' : '') + '"><span class="dot"></span>' + label + '</div>';
@@ -406,40 +240,14 @@
         );
     }
 
-    // 내장 테마 미리보기: 실제 사이트 style.css + data-app-theme 속성에 의존
-    function buildMockupHtml(themeValue, view) {
-        var cssLinks = CSS_HREFS.map(function (href) {
-            return '<link rel="stylesheet" href="' + href + '">';
-        }).join('');
-        var body = view === 'detail' ? buildDetailMockupBody() : buildDashboardMockupBody();
-        return (
-            '<!DOCTYPE html><html data-app-theme="' + themeValue + '">' +
-            '<head><meta charset="UTF-8">' + cssLinks + '<style>' + BASE_CSS + '</style></head>' +
-            '<body>' + body + '</body></html>'
-        );
-    }
-
-    // 커스텀 테마 미리보기: 외부 CSS에 전혀 의존하지 않고, 사용자가 고른 12개
-    // 변수 값을 :root에 직접 주입함 (다른 테마 CSS에 오염될 여지 자체를 없앰)
-    function buildCustomMockupHtml(vars, view) {
-        var body = view === 'detail' ? buildDetailMockupBody() : buildDashboardMockupBody();
-        var varsCss = ':root{' + TOKENS.map(function (t) {
-            return t.key + ':' + (vars[t.key] || '#000000') + ';';
-        }).join('') + '}';
-        return (
-            '<!DOCTYPE html><html>' +
-            '<head><meta charset="UTF-8"><style>' + varsCss + BASE_CSS + '</style></head>' +
-            '<body>' + body + '</body></html>'
-        );
-    }
-
-    // ======================================================================
-    // 탭 1: 테마 갤러리
-    // ======================================================================
+    // ---- 렌더링 ----
     function renderList() {
         var listEl = document.getElementById('tp-list');
         if (!listEl) return;
         listEl.innerHTML = '';
+
+        var banner = document.getElementById('tp-custom-active-banner');
+        if (banner) banner.style.display = state.savedTheme === 'custom' ? 'flex' : 'none';
 
         THEMES.forEach(function (theme) {
             var item = document.createElement('div');
@@ -510,6 +318,10 @@
             return;
         }
 
+        // 이전에 커스텀 테마 오버라이드가 씌워져 있었다면 제거
+        var customStyleEl = document.getElementById('tp-custom-theme-style');
+        if (customStyleEl) customStyleEl.remove();
+
         document.documentElement.setAttribute('data-app-theme', theme);
         state.savedTheme = theme;
         renderList();
@@ -522,142 +334,47 @@
         renderPreviewFrame();
     }
 
-    // ======================================================================
-    // 탭 2: 새 테마 만들기 (커스텀 테마)
-    // ======================================================================
-    function loadCustomThemes() {
+    // ================= 커스텀 테마 만들기 탭 =================
+    function readCustomColors() {
         try {
-            var raw = localStorage.getItem(CUSTOM_THEMES_KEY);
-            var arr = raw ? JSON.parse(raw) : [];
-            return Array.isArray(arr) ? arr : [];
+            var raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            var merged = {};
+            CUSTOM_TOKENS.forEach(function (t) { merged[t.key] = parsed[t.key] || DEFAULT_CUSTOM_COLORS[t.key]; });
+            return merged;
         } catch (e) {
-            return [];
+            return null;
         }
     }
 
-    function persistCustomThemes(list) {
-        try {
-            localStorage.setItem(CUSTOM_THEMES_KEY, JSON.stringify(list));
-            return true;
-        } catch (e) {
-            return false;
-        }
+    function writeCustomColors(colors) {
+        try { localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(colors)); return true; } catch (e) { return false; }
     }
 
-    function startNewCustomDraft() {
-        customState.editingId = null;
-        customState.vars = readCurrentVarsAsDefaults();
-        customState.viewIndex = 0;
-        var nameEl = document.getElementById('tc-name');
-        if (nameEl) nameEl.value = '';
-        renderCustomList();
-        renderColorGrid();
-        renderCustomPreviewFrame();
-        setCustomStatus('', null);
-    }
+    function renderColorFields() {
+        var wrap = document.getElementById('tp-color-fields');
+        if (!wrap) return;
+        wrap.innerHTML = '';
 
-    function selectCustomTheme(themeId) {
-        var theme = customState.themes.filter(function (t) { return t.id === themeId; })[0];
-        if (!theme) return;
-        customState.editingId = theme.id;
-        // 얕은 복사 - 편집 중 원본 배열을 직접 건드리지 않도록
-        customState.vars = {};
-        TOKENS.forEach(function (t) {
-            customState.vars[t.key] = theme.vars[t.key] || '#000000';
-        });
-        customState.viewIndex = 0;
-        var nameEl = document.getElementById('tc-name');
-        if (nameEl) nameEl.value = theme.name;
-        renderCustomList();
-        renderColorGrid();
-        renderCustomPreviewFrame();
-        setCustomStatus('', null);
-    }
-
-    function deleteCustomTheme(themeId, evt) {
-        if (evt) evt.stopPropagation();
-        customState.themes = customState.themes.filter(function (t) { return t.id !== themeId; });
-        persistCustomThemes(customState.themes);
-        if (customState.editingId === themeId) {
-            startNewCustomDraft();
-        } else {
-            renderCustomList();
-        }
-    }
-
-    function renderCustomList() {
-        var listEl = document.getElementById('tc-list');
-        if (!listEl) return;
-        listEl.innerHTML = '';
-
-        var newBtn = document.createElement('button');
-        newBtn.className = 'tp-custom-new-btn';
-        newBtn.type = 'button';
-        newBtn.innerHTML = '<i class="fa-solid fa-plus"></i> 새로 만들기';
-        newBtn.addEventListener('click', startNewCustomDraft);
-        listEl.appendChild(newBtn);
-
-        if (customState.themes.length === 0) {
-            var empty = document.createElement('div');
-            empty.className = 'tp-custom-empty';
-            empty.textContent = '아직 저장된 커스텀 테마가 없습니다.';
-            listEl.appendChild(empty);
-            return;
-        }
-
-        customState.themes.forEach(function (theme) {
+        CUSTOM_TOKENS.forEach(function (token) {
             var row = document.createElement('div');
-            row.className = 'tp-custom-item-row';
-
-            var item = document.createElement('div');
-            item.className = 'tp-list-item';
-            if (theme.id === customState.editingId) item.classList.add('is-selected');
-            item.innerHTML = '<div class="tp-list-item-name">' + escapeHtml(theme.name || '(이름 없음)') + '</div>';
-            item.addEventListener('click', function () { selectCustomTheme(theme.id); });
-
-            var delBtn = document.createElement('button');
-            delBtn.className = 'tp-custom-delete-btn';
-            delBtn.type = 'button';
-            delBtn.title = '삭제';
-            delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-            delBtn.addEventListener('click', function (evt) { deleteCustomTheme(theme.id, evt); });
-
-            row.appendChild(item);
-            row.appendChild(delBtn);
-            listEl.appendChild(row);
-        });
-    }
-
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str == null ? '' : String(str);
-        return div.innerHTML;
-    }
-
-    function renderColorGrid() {
-        var gridEl = document.getElementById('tc-color-grid');
-        if (!gridEl) return;
-        gridEl.innerHTML = '';
-
-        TOKENS.forEach(function (token) {
-            var field = document.createElement('label');
-            field.className = 'tp-color-field';
+            row.className = 'tp-color-field';
+            row.innerHTML =
+                '<div><span class="tp-color-field-label">' + token.label + '</span>' +
+                '<span class="tp-color-field-sub">' + token.sub + '</span></div>';
 
             var input = document.createElement('input');
             input.type = 'color';
-            input.value = toHexColor(customState.vars[token.key] || '#000000');
+            input.value = customState.colors[token.key];
+            input.setAttribute('data-token', token.key);
             input.addEventListener('input', function () {
-                customState.vars[token.key] = input.value;
+                customState.colors[token.key] = input.value;
                 renderCustomPreviewFrame();
             });
 
-            var label = document.createElement('span');
-            label.className = 'tp-color-field-label';
-            label.textContent = token.label;
-
-            field.appendChild(input);
-            field.appendChild(label);
-            gridEl.appendChild(field);
+            row.appendChild(input);
+            wrap.appendChild(row);
         });
     }
 
@@ -665,8 +382,16 @@
         var iframe = document.getElementById('tc-preview-iframe');
         var label = document.getElementById('tc-preview-label');
         var view = VIEWS[customState.viewIndex];
-        if (iframe) iframe.srcdoc = buildCustomMockupHtml(customState.vars, view);
+        if (iframe) iframe.srcdoc = buildCustomMockupHtml(customState.colors, view);
         if (label) label.textContent = VIEW_LABELS[view];
+    }
+
+    function setCustomStatus(message, type) {
+        var el = document.getElementById('tc-apply-status');
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.remove('is-success', 'is-error');
+        if (type) el.classList.add(type);
     }
 
     function navigateCustomPreview(delta) {
@@ -674,185 +399,128 @@
         renderCustomPreviewFrame();
     }
 
-    function setCustomStatus(message, type) {
-        var el = document.getElementById('tc-status');
-        if (!el) return;
-        el.textContent = message || '';
-        el.classList.remove('is-success', 'is-error');
-        if (type) el.classList.add(type);
-    }
-
-    function saveCustomTheme() {
-        var nameEl = document.getElementById('tc-name');
-        var name = nameEl ? nameEl.value.trim() : '';
-        if (!name) {
-            setCustomStatus('테마 이름을 입력해 주세요.', 'is-error');
-            if (nameEl) nameEl.focus();
-            return;
+    // 실제 페이지(:root)에 커스텀 색을 주입 — 코어가 'custom' 값을 인식하지 못하므로
+    // data-app-theme 속성이 아니라 인라인 <style>로 변수를 직접 덮어써서 적용한다.
+    function applyCustomOverrideToPage(colors) {
+        var styleEl = document.getElementById('tp-custom-theme-style');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'tp-custom-theme-style';
+            document.head.appendChild(styleEl);
         }
-
-        var varsCopy = {};
-        TOKENS.forEach(function (t) { varsCopy[t.key] = customState.vars[t.key] || '#000000'; });
-
-        if (customState.editingId) {
-            var existing = customState.themes.filter(function (t) { return t.id === customState.editingId; })[0];
-            if (existing) {
-                existing.name = name;
-                existing.vars = varsCopy;
-            }
-        } else {
-            var newTheme = { id: generateId(), name: name, vars: varsCopy };
-            customState.themes.push(newTheme);
-            customState.editingId = newTheme.id;
-        }
-
-        var ok = persistCustomThemes(customState.themes);
-        renderCustomList();
-        if (!ok) {
-            setCustomStatus('저장 실패: 이 브라우저에서 로컬 저장소를 사용할 수 없습니다.', 'is-error');
-            return;
-        }
-        setCustomStatus('"' + name + '" 테마를 저장했습니다.', 'is-success');
-    }
-
-    function applyYamlDataToCustomState(data) {
-        var nameEl = document.getElementById('tc-name');
-        if (data.name && nameEl) {
-            nameEl.value = String(data.name).slice(0, 20);
-        }
-        var appliedCount = 0;
-        TOKENS.forEach(function (token) {
-            var raw = data[tokenYamlKey(token)];
-            if (raw == null || !isValidColorValue(raw)) return;
-            customState.vars[token.key] = toHexColor(raw);
-            appliedCount++;
-        });
-        return appliedCount;
-    }
-
-    function handleYamlUpload(evt) {
-        var input = evt.target;
-        var file = input.files && input.files[0];
-        if (!file) return;
-
-        var reader = new FileReader();
-        reader.onload = function () {
-            try {
-                var data = parseSimpleYaml(String(reader.result || ''));
-                var count = applyYamlDataToCustomState(data);
-                if (count === 0) {
-                    setCustomStatus('YAML 파일에서 인식 가능한 색상 값을 찾지 못했습니다. (예: accent: "#38bdf8")', 'is-error');
-                } else {
-                    renderColorGrid();
-                    renderCustomPreviewFrame();
-                    setCustomStatus(count + '개 색상 값을 YAML 파일에서 불러왔습니다. 확인 후 저장해 주세요.', 'is-success');
-                }
-            } catch (e) {
-                setCustomStatus('YAML 파일을 읽는 중 오류가 발생했습니다.', 'is-error');
-            }
-            input.value = ''; // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 초기화
-        };
-        reader.onerror = function () {
-            setCustomStatus('파일을 읽지 못했습니다.', 'is-error');
-            input.value = '';
-        };
-        reader.readAsText(file, 'utf-8');
+        styleEl.textContent = ':root{' + CUSTOM_TOKENS.map(function (t) {
+            return '--' + t.key + ':' + (colors[t.key] || DEFAULT_CUSTOM_COLORS[t.key]) + ';';
+        }).join('') + '}';
     }
 
     function applyCustomTheme() {
-        var vars = customState.vars;
-        var styleEl = document.getElementById(CUSTOM_OVERRIDE_STYLE_ID);
-        if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = CUSTOM_OVERRIDE_STYLE_ID;
-            document.head.appendChild(styleEl);
+        var ok1 = writeCustomColors(customState.colors);
+        var ok2 = writeSavedTheme('custom');
+        if (!ok1 || !ok2) {
+            setCustomStatus('저장 실패: 이 브라우저에서 로컬 저장소를 사용할 수 없습니다.', 'is-error');
+            return;
         }
-        var cssText = ':root{' + TOKENS.map(function (t) {
-            return t.key + ':' + (vars[t.key] || '#000000') + ' !important;';
-        }).join('') + '}';
-        styleEl.textContent = cssText;
-
-        setCustomStatus(
-            '이 테마를 현재 세션에 즉시 적용했습니다. 새로고침하면 초기화되니, 계속 쓰려면 저장해두고 다시 "적용"을 눌러주세요.',
-            'is-success'
-        );
+        applyCustomOverrideToPage(customState.colors);
+        state.savedTheme = 'custom';
+        renderList();
+        setCustomStatus('커스텀 테마가 이 브라우저에 적용되었습니다. (실험적 기능 — 완전한 새로고침 영속성은 보장되지 않으며, 이 플러그인 탭을 다시 열면 자동으로 재적용을 시도합니다.)', 'is-success');
     }
 
-    // ======================================================================
-    // 탭 전환
-    // ======================================================================
-    function switchTab(tab) {
-        var galleryPanel = document.getElementById('tp-panel-gallery');
-        var createPanel = document.getElementById('tp-panel-create');
-        var tabs = document.querySelectorAll('.tp-tab');
-        tabs.forEach(function (btn) {
-            var isActive = btn.getAttribute('data-tab') === tab;
-            btn.classList.toggle('is-active', isActive);
-            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    function resetCustomColors() {
+        customState.colors = Object.assign({}, DEFAULT_CUSTOM_COLORS);
+        renderColorFields();
+        renderCustomPreviewFrame();
+        setCustomStatus('기본 색상으로 초기화했습니다.', null);
+    }
+
+    function exportCustomThemeYaml() {
+        var lines = [
+            '# BookOasis 커스텀 테마 — theme_previewer 플러그인에서 생성',
+            '# 주의: 이 YAML 형식은 CSS 변수 이름을 근거로 한 추정치입니다.',
+            '# themes/ 폴더에 넣기 전, 반드시 서버의 themes/README.md 에 적힌',
+            '# 정확한 필드명/형식과 대조해 확인하세요.',
+            'name: "내 커스텀 테마"',
+            'author: "me"',
+            'colors:'
+        ];
+        CUSTOM_TOKENS.forEach(function (t) {
+            lines.push('  ' + t.key + ': "' + customState.colors[t.key] + '"');
         });
-        if (galleryPanel) galleryPanel.hidden = tab !== 'gallery';
-        if (createPanel) createPanel.hidden = tab !== 'create';
+        var text = lines.join('\n') + '\n';
+
+        var blob = new Blob([text], { type: 'text/yaml' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'my-custom-theme.yaml';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setCustomStatus('my-custom-theme.yaml 파일을 내보냈습니다. themes/README.md 규격과 대조해 확인 후 서버의 themes/ 폴더에 넣어주세요.', null);
     }
 
-    // ======================================================================
-    // 초기화
-    // ======================================================================
+    // ================= 탭 전환 =================
+    function switchTab(tabName) {
+        var selectPanel = document.getElementById('tp-panel-select');
+        var createPanel = document.getElementById('tp-panel-create');
+        var selectTabBtn = document.getElementById('tp-tab-select');
+        var createTabBtn = document.getElementById('tp-tab-create');
+
+        var isCreate = tabName === 'create';
+        if (selectPanel) selectPanel.style.display = isCreate ? 'none' : 'block';
+        if (createPanel) createPanel.style.display = isCreate ? 'block' : 'none';
+        if (selectTabBtn) selectTabBtn.classList.toggle('active', !isCreate);
+        if (createTabBtn) createTabBtn.classList.toggle('active', isCreate);
+    }
+
     function init() {
         var listEl = document.getElementById('tp-list');
         if (!listEl || listEl.dataset.tpInit === '1') return;
         listEl.dataset.tpInit = '1';
 
-        // --- 탭 1: 갤러리 ---
         state.savedTheme = readSavedTheme();
-        state.selectedTheme = state.savedTheme;
+        state.selectedTheme = state.savedTheme === 'custom' ? 'purple' : state.savedTheme;
+
         renderList();
         renderDetail();
 
         var prevBtn = document.getElementById('td-prev');
         var nextBtn = document.getElementById('td-next');
         var applyBtn = document.getElementById('td-apply-btn');
-        var popupBtn = document.getElementById('td-popup-btn');
         if (prevBtn) prevBtn.addEventListener('click', function () { navigatePreview(-1); });
         if (nextBtn) nextBtn.addEventListener('click', function () { navigatePreview(1); });
         if (applyBtn) applyBtn.addEventListener('click', applySelectedTheme);
-        if (popupBtn) popupBtn.addEventListener('click', function () {
-            var theme = findTheme(state.selectedTheme);
-            var html = buildMockupHtml(state.selectedTheme, VIEWS[state.viewIndex]);
-            if (!openPreviewPopup(html, theme.label + ' 미리보기')) {
-                setStatus('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제한 뒤 다시 시도해 주세요.', 'is-error');
-            }
-        });
 
-        // --- 탭 2: 새 테마 만들기 ---
-        customState.themes = loadCustomThemes();
-        renderPresetRow();
-        startNewCustomDraft();
+        // 커스텀 테마 탭 초기화
+        customState.colors = readCustomColors() || Object.assign({}, DEFAULT_CUSTOM_COLORS);
+        renderColorFields();
+        renderCustomPreviewFrame();
 
         var tcPrevBtn = document.getElementById('tc-prev');
         var tcNextBtn = document.getElementById('tc-next');
-        var tcSaveBtn = document.getElementById('tc-save-btn');
         var tcApplyBtn = document.getElementById('tc-apply-btn');
-        var tcPopupBtn = document.getElementById('tc-popup-btn');
-        var tcYamlInput = document.getElementById('tc-yaml-upload');
+        var tcResetBtn = document.getElementById('tc-reset-btn');
+        var tcExportBtn = document.getElementById('tc-export-btn');
         if (tcPrevBtn) tcPrevBtn.addEventListener('click', function () { navigateCustomPreview(-1); });
         if (tcNextBtn) tcNextBtn.addEventListener('click', function () { navigateCustomPreview(1); });
-        if (tcSaveBtn) tcSaveBtn.addEventListener('click', saveCustomTheme);
         if (tcApplyBtn) tcApplyBtn.addEventListener('click', applyCustomTheme);
-        if (tcYamlInput) tcYamlInput.addEventListener('change', handleYamlUpload);
-        if (tcPopupBtn) tcPopupBtn.addEventListener('click', function () {
-            var html = buildCustomMockupHtml(customState.vars, VIEWS[customState.viewIndex]);
-            var nameEl = document.getElementById('tc-name');
-            var title = (nameEl && nameEl.value.trim()) || '커스텀 테마';
-            if (!openPreviewPopup(html, title + ' 미리보기')) {
-                setCustomStatus('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제한 뒤 다시 시도해 주세요.', 'is-error');
-            }
-        });
+        if (tcResetBtn) tcResetBtn.addEventListener('click', resetCustomColors);
+        if (tcExportBtn) tcExportBtn.addEventListener('click', exportCustomThemeYaml);
 
-        // --- 탭 전환 버튼 ---
-        var tabButtons = document.querySelectorAll('.tp-tab');
-        tabButtons.forEach(function (btn) {
-            btn.addEventListener('click', function () { switchTab(btn.getAttribute('data-tab')); });
-        });
+        // 탭 전환 버튼
+        var selectTabBtn = document.getElementById('tp-tab-select');
+        var createTabBtn = document.getElementById('tp-tab-create');
+        if (selectTabBtn) selectTabBtn.addEventListener('click', function () { switchTab('select'); });
+        if (createTabBtn) createTabBtn.addEventListener('click', function () { switchTab('create'); });
+
+        // 이전에 커스텀 테마를 적용해둔 상태였다면(같은 세션 내 재방문 등) 다시 씌워준다.
+        // 단, 브라우저를 완전히 새로고침한 뒤에는 코어 부트 스크립트가 이 사실을 모르므로
+        // 이 플러그인 탭을 다시 열기 전까지는 원래 저장된(purple 등) 테마로 보일 수 있다.
+        if (state.savedTheme === 'custom' && customState.colors) {
+            applyCustomOverrideToPage(customState.colors);
+        }
     }
 
     if (document.readyState === 'loading') {

@@ -2,17 +2,25 @@
   <div class="tp-header">
     <div>
       <h2 class="tp-title">테마</h2>
-      <p class="tp-desc">BookOasis는 다양한 색상의 테마를 지원합니다. 갤러리에서 기본 제공 테마를 미리 보거나, 직접 색상을 골라 나만의 테마를 만들어보세요.</p>
+      <p class="tp-desc">BookOasis는 다양한 색상의 테마를 지원합니다. 미리 만들어진 테마를 고르거나, 원하는 색을 직접 조합해 나만의 테마를 만들어보세요.</p>
     </div>
   </div>
 
+  <!-- 탭 헤더 -->
   <div class="tp-tabs" role="tablist">
-    <button class="tp-tab is-active" data-tab="gallery" type="button" role="tab" aria-selected="true">테마 갤러리</button>
-    <button class="tp-tab" data-tab="create" type="button" role="tab" aria-selected="false">+ 새 테마 만들기</button>
+    <button type="button" class="tp-tab active" id="tp-tab-select" data-tab="select" role="tab">
+      <i class="fa-solid fa-palette"></i> 테마 선택
+    </button>
+    <button type="button" class="tp-tab" id="tp-tab-create" data-tab="create" role="tab">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> 테마 만들기
+    </button>
   </div>
 
-  <!-- ===== 탭 1: 테마 갤러리 (기존 8종 테마) ===== -->
-  <div id="tp-panel-gallery" class="tp-panel">
+  <!-- ===== 패널 1: 기존 테마 선택 ===== -->
+  <div class="tp-panel" id="tp-panel-select">
+    <div id="tp-custom-active-banner" class="tp-custom-active-banner" style="display: none;">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> 현재 <strong>커스텀 테마</strong>가 적용되어 있습니다. 아래 목록에서 다른 테마를 선택하면 커스텀 테마는 해제됩니다.
+    </div>
     <div class="tp-layout">
       <div class="tp-list" id="tp-list">
         <div class="tp-loading">테마 목록을 불러오는 중...</div>
@@ -30,13 +38,7 @@
         </div>
 
         <div class="tp-preview-section">
-          <div class="tp-preview-title-row">
-            <h4 class="tp-preview-title">미리보기</h4>
-            <button id="td-popup-btn" class="tp-btn tp-btn-secondary tp-btn-sm" type="button">
-              <i class="fa-solid fa-up-right-from-square"></i> 새 창에서 정확히 보기
-            </button>
-          </div>
-          <p class="tp-preview-hint">현재 실제로 적용된 테마에 흑백/고대비 같은 화면 효과가 걸려 있으면, 아래 내장 미리보기에도 그 효과가 함께 보일 수 있습니다. 정확한 색상은 새 창에서 확인하세요.</p>
+          <h4 class="tp-preview-title">미리보기</h4>
           <div class="tp-preview-carousel">
             <button id="td-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
               <i class="fa-solid fa-chevron-left"></i>
@@ -56,72 +58,41 @@
     </div>
   </div>
 
-  <!-- ===== 탭 2: 새 테마 만들기 (커스텀 테마) ===== -->
-  <div id="tp-panel-create" class="tp-panel" hidden>
-    <div class="tp-layout">
-      <div class="tp-custom-list" id="tc-list">
-        <button id="tc-new-btn" class="tp-custom-new-btn" type="button">
-          <i class="fa-solid fa-plus"></i> 새로 만들기
-        </button>
-        <!-- 저장된 커스텀 테마 목록이 여기에 JS로 렌더링됩니다 -->
+  <!-- ===== 패널 2: 커스텀 테마 만들기 ===== -->
+  <div class="tp-panel" id="tp-panel-create" style="display: none;">
+    <div class="tp-create-notice">
+      <i class="fa-solid fa-circle-info"></i>
+      완전한 서버 등록(<code>themes/*.yaml</code>)은 서버 파일시스템에 직접 파일을 넣어야 하는 작업이라 이 화면만으로는 대신할 수 없습니다.
+      대신 <strong>지금 이 브라우저에 바로 적용</strong>(실험적 — 완전한 새로고침 영속성은 보장되지 않음)하거나,
+      <strong>YAML로 내보내</strong> 직접 <code>themes/</code> 폴더에 넣으실 수 있습니다. YAML 형식은 추정치이니 등록 전 <code>themes/README.md</code>와 꼭 대조해 주세요.
+    </div>
+
+    <div class="tp-create-layout">
+      <div class="tp-color-fields" id="tp-color-fields">
+        <!-- JS가 색상 입력 필드를 동적으로 채움 -->
       </div>
 
-      <div class="tp-detail">
+      <div class="tp-detail" style="flex: 1;">
         <div class="tp-detail-header">
-          <div style="flex:1; min-width:220px;">
-            <input id="tc-name" class="tp-input" type="text" placeholder="테마 이름 (예: 나만의 다크)" maxlength="20" />
+          <div>
+            <h3 class="tp-detail-name">내 커스텀 테마</h3>
+            <p class="tp-detail-desc">왼쪽에서 색을 고르면 오른쪽 미리보기에 바로 반영됩니다.</p>
           </div>
-          <div style="display:flex; gap:0.5rem;">
-            <button id="tc-save-btn" class="tp-btn tp-btn-secondary" type="button">
-              <i class="fa-solid fa-floppy-disk"></i> 저장
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="tc-reset-btn" class="tp-btn tp-btn-secondary" type="button">
+              <i class="fa-solid fa-rotate-left"></i> 초기화
+            </button>
+            <button id="tc-export-btn" class="tp-btn tp-btn-secondary" type="button">
+              <i class="fa-solid fa-file-arrow-down"></i> YAML 내보내기
             </button>
             <button id="tc-apply-btn" class="tp-btn tp-btn-primary" type="button">
-              <i class="fa-solid fa-check"></i> 이 테마 적용
+              <i class="fa-solid fa-check"></i> 이 브라우저에 적용
             </button>
           </div>
         </div>
 
         <div class="tp-preview-section">
-          <h4 class="tp-preview-title">빠르게 시작하기</h4>
-          <div class="tp-preset-row" id="tc-preset-row"></div>
-          <div class="tp-yaml-upload-row">
-            <label class="tp-btn tp-btn-secondary" for="tc-yaml-upload">
-              <i class="fa-solid fa-file-arrow-up"></i> YAML 파일 업로드
-            </label>
-            <input type="file" id="tc-yaml-upload" accept=".yml,.yaml,text/yaml,text/x-yaml" hidden />
-            <details class="tp-yaml-help">
-              <summary>파일 형식 예시 보기</summary>
-              <pre class="tp-yaml-example">name: 나만의 다크
-bg-main: "#0f172a"
-bg-sidebar: "#111827"
-bg-card: "#1e293b"
-bg-card-hover: "#243044"
-text-primary: "#f1f5f9"
-text-muted: "#94a3b8"
-text-secondary: "#cbd5e1"
-accent: "#38bdf8"
-accent-hover: "#0ea5e9"
-border: "#334155"
-border-light: "#1e293b"
-input-bg: "#1e293b"</pre>
-              <p class="tp-yaml-note">중첩 없는 단순 <code>key: value</code> 형식만 지원합니다. 필요한 항목만 적어도 되며, 적지 않은 항목은 현재 값이 그대로 유지됩니다.</p>
-            </details>
-          </div>
-        </div>
-
-        <div class="tp-preview-section">
-          <h4 class="tp-preview-title">색상 설정</h4>
-          <div class="tp-color-grid" id="tc-color-grid"></div>
-        </div>
-
-        <div class="tp-preview-section">
-          <div class="tp-preview-title-row">
-            <h4 class="tp-preview-title">미리보기</h4>
-            <button id="tc-popup-btn" class="tp-btn tp-btn-secondary tp-btn-sm" type="button">
-              <i class="fa-solid fa-up-right-from-square"></i> 새 창에서 정확히 보기
-            </button>
-          </div>
-          <p class="tp-preview-hint">현재 실제로 적용된 테마에 흑백/고대비 같은 화면 효과가 걸려 있으면, 아래 내장 미리보기에도 그 효과가 함께 보일 수 있습니다. 정확한 색상은 새 창에서 확인하세요.</p>
+          <h4 class="tp-preview-title">미리보기</h4>
           <div class="tp-preview-carousel">
             <button id="tc-prev" class="tp-nav-arrow" type="button" aria-label="이전 미리보기">
               <i class="fa-solid fa-chevron-left"></i>
@@ -136,13 +107,13 @@ input-bg: "#1e293b"</pre>
           </div>
         </div>
 
-        <div id="tc-status" class="tp-apply-status" role="status"></div>
+        <div id="tc-apply-status" class="tp-apply-status" role="status"></div>
       </div>
     </div>
   </div>
 
   <p class="tp-footnote">
     <i class="fa-solid fa-circle-info"></i>
-    테마 적용은 서버가 아니라 <strong>이 브라우저(기기)</strong>에 저장됩니다. 커스텀 테마의 "적용"은 현재 세션에만 즉시 반영되며, 새로고침하면 초기화됩니다 — 계속 쓰려면 저장해두고 다시 적용해 주세요.
+    적용은 서버가 아니라 <strong>이 브라우저(기기)</strong>에 저장됩니다. 다른 브라우저나 기기에서는 각자 다시 적용해야 합니다.
   </p>
 </div>
