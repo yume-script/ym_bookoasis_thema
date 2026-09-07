@@ -644,7 +644,7 @@
         applyCustomOverrideToPage(customState.colors);
         state.savedTheme = 'custom';
         renderList();
-        setCustomStatus('커스텀 테마가 이 브라우저에 적용되었습니다. (실험적 기능 — 완전한 새로고침 영속성은 보장되지 않으며, 이 플러그인 탭을 다시 열면 자동으로 재적용을 시도합니다.)', 'is-success');
+        setCustomStatus('이 브라우저 화면에 임시로 적용했습니다. (서버에 등록된 게 아니라 미리보기 성격이며, 새로고침하면 풀립니다. 이 플러그인 탭을 다시 열면 자동으로 재적용을 시도합니다.)', 'is-success');
     }
 
     function resetCustomColors() {
@@ -684,9 +684,9 @@
         URL.revokeObjectURL(url);
 
         if (idCollides) {
-            setCustomStatus(id + '.yaml 파일을 내보냈습니다. 단, id "' + id + '"는 내장 테마와 겹치므로 서버가 거부합니다 — id를 바꿔서 다시 내보내주세요.', 'is-error');
+            setCustomStatus(id + '.yaml 파일을 다운로드했습니다. 단, id "' + id + '"는 내장 테마와 겹쳐 서버가 거부하니 id를 바꿔서 다시 저장해주세요. (다운로드만 된 상태이며 서버에는 아직 아무 변화가 없습니다.)', 'is-error');
         } else {
-            setCustomStatus(id + '.yaml 파일을 내보냈습니다. 서버의 themes/ 폴더에 넣고 설정 > 일반 탭의 "커스텀 테마 다시 스캔"을 눌러주세요.', 'is-success');
+            setCustomStatus(id + '.yaml 파일을 다운로드했습니다. 서버에 정식 등록하려면, 이 파일을 서버의 themes/ 폴더에 직접 넣고 설정 > 일반 탭의 "커스텀 테마 다시 스캔"을 눌러주세요 (지금은 다운로드만 된 상태입니다).', 'is-success');
         }
     }
 
