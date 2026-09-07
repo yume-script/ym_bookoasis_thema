@@ -151,6 +151,60 @@
     background: var(--app-bg-card-hover);
 }
 
+/* ===== 가져오기 바 ===== */
+.tp-import-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    background: var(--app-bg-card);
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.6rem;
+}
+
+@media (max-width: 760px) {
+    .tp-import-bar {
+        grid-template-columns: 1fr;
+    }
+}
+
+.tp-import-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.tp-import-group label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--app-text-primary);
+}
+
+.tp-import-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.tp-import-controls select {
+    flex: 1;
+    background: var(--app-input-bg);
+    border: 1px solid var(--app-border);
+    color: var(--app-text-primary);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.tp-import-controls input[type="file"] {
+    flex: 1;
+    font-size: 0.76rem;
+    color: var(--app-text-muted);
+}
+
 /* ===== 2단 레이아웃 ===== */
 .tp-layout {
     display: grid;

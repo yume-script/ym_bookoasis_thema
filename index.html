@@ -67,6 +67,25 @@
       <strong>YAML로 내보내</strong> 직접 <code>themes/</code> 폴더에 넣으실 수 있습니다. YAML 형식은 추정치이니 등록 전 <code>themes/README.md</code>와 꼭 대조해 주세요.
     </div>
 
+    <div class="tp-import-bar">
+      <div class="tp-import-group">
+        <label for="tc-import-theme-select">기존 테마에서 색 불러오기</label>
+        <div class="tp-import-controls">
+          <select id="tc-import-theme-select"></select>
+          <button id="tc-import-theme-btn" class="tp-btn tp-btn-secondary" type="button">
+            <i class="fa-solid fa-download"></i> 불러오기
+          </button>
+        </div>
+      </div>
+      <div class="tp-import-group">
+        <label for="tc-import-file-input">YAML/JSON 파일 업로드해서 이어 편집</label>
+        <div class="tp-import-controls">
+          <input type="file" id="tc-import-file-input" accept=".yaml,.yml,.json,.txt">
+        </div>
+      </div>
+    </div>
+    <div id="tc-import-status" class="tp-apply-status"></div>
+
     <div class="tp-create-layout">
       <div class="tp-color-fields" id="tp-color-fields">
         <!-- JS가 색상 입력 필드를 동적으로 채움 -->

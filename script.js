@@ -399,6 +399,123 @@
         renderCustomPreviewFrame();
     }
 
+    // 임의의 CSS 색상값(hex/rgb/hsl/색이름 등)을 <input type="color">가 요구하는 #rrggbb로 정규화
+    function normalizeToHex(doc, win, rawValue) {
+        if (!rawValue) return null;
+        var trimmed = rawValue.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
+        try {
+            var probe = doc.createElement('span');
+            probe.style.color = trimmed;
+            doc.body.appendChild(probe);
+            var rgb = win.getComputedStyle(probe).color;
+            doc.body.removeChild(probe);
+            var m = rgb.match(/rgba?\(([^)]+)\)/);
+            if (!m) return null;
+            var parts = m[1].split(',').map(function (s) { return parseInt(s.trim(), 10); });
+            function toHex(n) { var h = (n || 0).toString(16); return h.length === 1 ? '0' + h : h; }
+            return '#' + toHex(parts[0]) + toHex(parts[1]) + toHex(parts[2]);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // 빌트인 테마(purple/dark/... )가 실제로 사용하는 CSS 변수값을, 숨겨진 iframe에
+    // 실제 사이트 스타일시트를 로드해서 그대로 읽어온다(추정치가 아니라 진짜 값).
+    function importFromBuiltinTheme(themeValue, onDone) {
+        var cssLinks = CSS_HREFS.map(function (href) {
+            return '<link rel="stylesheet" href="' + href + '">';
+        }).join('');
+
+        var frame = document.createElement('iframe');
+        frame.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:10px;height:10px;visibility:hidden;';
+        frame.setAttribute('sandbox', 'allow-same-origin');
+        document.body.appendChild(frame);
+
+        frame.addEventListener('load', function () {
+            try {
+                var doc = frame.contentDocument;
+                var win = frame.contentWindow;
+                var computed = win.getComputedStyle(doc.documentElement);
+                var colors = {};
+                CUSTOM_TOKENS.forEach(function (t) {
+                    var raw = computed.getPropertyValue('--' + t.key);
+                    var hex = normalizeToHex(doc, win, raw) || DEFAULT_CUSTOM_COLORS[t.key];
+                    colors[t.key] = hex;
+                });
+                onDone(colors, null);
+            } catch (e) {
+                onDone(null, e);
+            } finally {
+                document.body.removeChild(frame);
+            }
+        });
+
+        frame.srcdoc =
+            '<!DOCTYPE html><html data-app-theme="' + themeValue + '">' +
+            '<head><meta charset="UTF-8">' + cssLinks + '</head><body></body></html>';
+    }
+
+    // 아주 단순한 "key: value" 라인 파서 — YAML/JSON 모두 이 형태만 인식한다.
+    // colors: 섹션 들여쓰기 여부와 무관하게, CUSTOM_TOKENS의 키와 일치하는 줄만 값을 취한다.
+    function parseColorsFromText(text) {
+        var colors = {};
+        var lines = text.split(/\r?\n/);
+        lines.forEach(function (line) {
+            var m = line.match(/^\s*"?([a-zA-Z0-9_-]+)"?\s*:\s*"?(#[0-9a-fA-F]{3,8})"?\s*,?\s*$/);
+            if (!m) return;
+            var key = m[1];
+            var value = m[2];
+            var isKnown = CUSTOM_TOKENS.some(function (t) { return t.key === key; });
+            if (isKnown) colors[key] = value.length === 4 ? expandShortHex(value) : value;
+        });
+        return colors;
+    }
+
+    function expandShortHex(hex) {
+        // #abc -> #aabbcc
+        var m = hex.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/);
+        if (!m) return hex;
+        return '#' + m[1] + m[1] + m[2] + m[2] + m[3] + m[3];
+    }
+
+    function importFromFile(file, onDone) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            try {
+                var text = String(reader.result || '');
+                var found = parseColorsFromText(text);
+                onDone(found, null);
+            } catch (e) {
+                onDone(null, e);
+            }
+        };
+        reader.onerror = function () { onDone(null, reader.error); };
+        reader.readAsText(file);
+    }
+
+    function setImportStatus(message, type) {
+        var el = document.getElementById('tc-import-status');
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.remove('is-success', 'is-error');
+        if (type) el.classList.add(type);
+    }
+
+    function mergeIntoCustomColors(partialColors) {
+        var count = 0;
+        Object.keys(partialColors).forEach(function (key) {
+            var isKnown = CUSTOM_TOKENS.some(function (t) { return t.key === key; });
+            if (isKnown && partialColors[key]) {
+                customState.colors[key] = partialColors[key];
+                count++;
+            }
+        });
+        renderColorFields();
+        renderCustomPreviewFrame();
+        return count;
+    }
+
     // 실제 페이지(:root)에 커스텀 색을 주입 — 코어가 'custom' 값을 인식하지 못하므로
     // data-app-theme 속성이 아니라 인라인 <style>로 변수를 직접 덮어써서 적용한다.
     function applyCustomOverrideToPage(colors) {
@@ -497,6 +614,53 @@
         customState.colors = readCustomColors() || Object.assign({}, DEFAULT_CUSTOM_COLORS);
         renderColorFields();
         renderCustomPreviewFrame();
+
+        // "기존 테마에서 색 불러오기" 드롭다운 채우기
+        var importSelect = document.getElementById('tc-import-theme-select');
+        if (importSelect) {
+            importSelect.innerHTML = THEMES.map(function (t) {
+                return '<option value="' + t.value + '">' + t.label + '</option>';
+            }).join('');
+        }
+
+        var importThemeBtn = document.getElementById('tc-import-theme-btn');
+        if (importThemeBtn) {
+            importThemeBtn.addEventListener('click', function () {
+                var value = importSelect ? importSelect.value : 'purple';
+                setImportStatus('불러오는 중...', null);
+                importFromBuiltinTheme(value, function (colors, err) {
+                    if (err || !colors) {
+                        setImportStatus('불러오기 실패: 실제 테마 CSS를 읽지 못했습니다.', 'is-error');
+                        return;
+                    }
+                    var count = mergeIntoCustomColors(colors);
+                    setImportStatus('"' + findTheme(value).label + '" 테마에서 색상 ' + count + '개를 불러왔습니다. 자유롭게 수정해 보세요.', 'is-success');
+                });
+            });
+        }
+
+        var importFileInput = document.getElementById('tc-import-file-input');
+        if (importFileInput) {
+            importFileInput.addEventListener('change', function () {
+                var file = importFileInput.files && importFileInput.files[0];
+                if (!file) return;
+                setImportStatus('파일을 읽는 중...', null);
+                importFromFile(file, function (colors, err) {
+                    if (err) {
+                        setImportStatus('파일을 읽지 못했습니다: ' + err, 'is-error');
+                        return;
+                    }
+                    var count = Object.keys(colors || {}).length;
+                    if (count === 0) {
+                        setImportStatus('이 파일에서 인식 가능한 색상 값을 찾지 못했습니다. "app-accent: #rrggbb" 형태의 줄이 있는지 확인해 주세요.', 'is-error');
+                        return;
+                    }
+                    mergeIntoCustomColors(colors);
+                    setImportStatus('파일에서 색상 ' + count + '개를 불러왔습니다.', 'is-success');
+                });
+                importFileInput.value = '';
+            });
+        }
 
         var tcPrevBtn = document.getElementById('tc-prev');
         var tcNextBtn = document.getElementById('tc-next');
