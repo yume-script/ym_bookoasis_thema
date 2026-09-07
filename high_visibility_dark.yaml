@@ -1,0 +1,24 @@
+# 고대비 시인성 테마 (다크) — README.md 실제 규격에 맞춰 작성
+# 설계 기준(WCAG 명암비):
+#   app-text-primary vs app-bg-main   : 약 18.0:1 (AAA)
+#   app-text-muted   vs app-bg-main   : 약 10.7:1 (AAA)
+#   흰 글씨 vs app-accent 배경         : 약  4.6:1 (AA)
+#   app-border       vs app-bg-card   : 약  3.5:1 (UI 비텍스트 요소 기준)
+id: high_visibility_dark
+label: "🔆 고대비 시인성 (다크)"
+vars:
+  app-bg-main: "#0a0e14"
+  app-bg-sidebar: "#10151d"
+  app-bg-card: "#171d27"
+  app-bg-card-hover: "#1f2733"
+  app-text-primary: "#f5f7fa"
+  app-text-muted: "#b8c2cc"
+  app-text-secondary: "#d7dee5"
+  app-accent: "#1f6feb"
+  app-accent-hover: "#388bfd"
+  app-accent-contrast: "#ffffff"
+  app-border: "#6b7280"
+  app-border-light: "#3a4048"
+  app-input-bg: "#10151d"
+  app-panel-rgb: "23, 29, 39"
+  app-panel-border-rgb: "255, 255, 255"

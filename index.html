@@ -69,6 +69,17 @@
 
     <div class="tp-import-bar">
       <div class="tp-import-group">
+        <label for="tc-meta-id">테마 ID <span class="tp-field-hint">(영소문자·숫자·-·_ 만, 32자 이내)</span></label>
+        <input type="text" id="tc-meta-id" maxlength="32" placeholder="my_custom_theme">
+      </div>
+      <div class="tp-import-group">
+        <label for="tc-meta-label">표시 이름 <span class="tp-field-hint">(드롭다운에 보일 이름, 60자 이내)</span></label>
+        <input type="text" id="tc-meta-label" maxlength="60" placeholder="내 커스텀 테마">
+      </div>
+    </div>
+
+    <div class="tp-import-bar">
+      <div class="tp-import-group">
         <label for="tc-import-theme-select">기존 테마에서 색 불러오기</label>
         <div class="tp-import-controls">
           <select id="tc-import-theme-select"></select>

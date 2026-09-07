@@ -181,6 +181,22 @@
     color: var(--app-text-primary);
 }
 
+.tp-field-hint {
+    font-weight: 400;
+    color: var(--app-text-muted);
+    font-size: 0.7rem;
+}
+
+.tp-import-group input[type="text"] {
+    background: var(--app-input-bg);
+    border: 1px solid var(--app-border);
+    color: var(--app-text-primary);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    outline: none;
+}
+
 .tp-import-controls {
     display: flex;
     gap: 0.5rem;

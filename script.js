@@ -32,20 +32,28 @@
     var BOOK_TITLES = ['나 혼자만 레벨업', '움직이지 않는 그림자', '그는 친구', 'I LOVE YOU', '오모리', '완간 미드나잇', '오늘만 사는 기사', '아내는 나를'];
 
     // ---- 커스텀 테마 만들기 ----
+    // README.md 실제 규격: vars에 아래 15개 키가 전부 있어야 하며 그 외 키는 허용되지 않음.
+    // kind: 'hex'는 #rrggbb 색상, 'rgb'는 "R, G, B" 정수 3개(콤마 구분, 알파 없음) 형식.
+    // UI에서는 둘 다 동일한 색상 picker로 다루고, 저장/내보내기 시점에만 kind에 맞게 변환한다.
     var CUSTOM_STORAGE_KEY = 'app_custom_theme_colors';
+    var CUSTOM_META_STORAGE_KEY = 'app_custom_theme_meta';
+    var BUILTIN_IDS = ['purple', 'dark', 'light', 'sepia', 'blue', 'aquamarine', 'ironman', 'epaper'];
     var CUSTOM_TOKENS = [
-        { key: 'app-bg-main', label: '메인 배경', sub: '전체 배경색' },
-        { key: 'app-bg-sidebar', label: '사이드바 배경', sub: '사이드바 · 상단바' },
-        { key: 'app-bg-card', label: '카드 배경', sub: '위젯 · 표 · 폼 박스' },
-        { key: 'app-bg-card-hover', label: '카드 호버 배경', sub: '마우스 오버 시' },
-        { key: 'app-text-primary', label: '기본 텍스트', sub: '제목 · 본문' },
-        { key: 'app-text-muted', label: '보조 텍스트', sub: '설명 · 타임스탬프' },
-        { key: 'app-text-secondary', label: '강조 보조 텍스트', sub: '서브 타이틀' },
-        { key: 'app-accent', label: '강조색', sub: '버튼 · 활성 탭' },
-        { key: 'app-accent-hover', label: '강조 호버색', sub: '버튼 마우스 오버' },
-        { key: 'app-border', label: '테두리', sub: '카드 · 입력창 테두리' },
-        { key: 'app-border-light', label: '연한 테두리', sub: '항목 구분선' },
-        { key: 'app-input-bg', label: '입력창 배경', sub: 'input · select' }
+        { key: 'app-bg-main', label: '메인 배경', sub: '전체 배경색', kind: 'hex' },
+        { key: 'app-bg-sidebar', label: '사이드바 배경', sub: '사이드바 · 상단바', kind: 'hex' },
+        { key: 'app-bg-card', label: '카드 배경', sub: '위젯 · 표 · 폼 박스', kind: 'hex' },
+        { key: 'app-bg-card-hover', label: '카드 호버 배경', sub: '마우스 오버 시', kind: 'hex' },
+        { key: 'app-text-primary', label: '기본 텍스트', sub: '제목 · 본문', kind: 'hex' },
+        { key: 'app-text-muted', label: '보조 텍스트', sub: '설명 · 타임스탬프', kind: 'hex' },
+        { key: 'app-text-secondary', label: '강조 보조 텍스트', sub: '서브 타이틀', kind: 'hex' },
+        { key: 'app-accent', label: '강조색', sub: '버튼 · 활성 탭', kind: 'hex' },
+        { key: 'app-accent-hover', label: '강조 호버색', sub: '버튼 마우스 오버', kind: 'hex' },
+        { key: 'app-accent-contrast', label: '강조색 위 글자색', sub: 'accent 배경 위 텍스트 (밝으면 어둡게, 어두우면 흰색)', kind: 'hex' },
+        { key: 'app-border', label: '테두리', sub: '카드 · 입력창 테두리', kind: 'hex' },
+        { key: 'app-border-light', label: '연한 테두리', sub: '항목 구분선', kind: 'hex' },
+        { key: 'app-input-bg', label: '입력창 배경', sub: 'input · select', kind: 'hex' },
+        { key: 'app-panel-rgb', label: '반투명 패널 배경', sub: 'rgba(var(--app-panel-rgb), a) 용', kind: 'rgb' },
+        { key: 'app-panel-border-rgb', label: '반투명 패널 테두리', sub: 'rgba(var(--app-panel-border-rgb), a) 용', kind: 'rgb' }
     ];
     var DEFAULT_CUSTOM_COLORS = {
         'app-bg-main': '#0f172a',
@@ -57,13 +65,18 @@
         'app-text-secondary': '#cbd5e1',
         'app-accent': '#a855f7',
         'app-accent-hover': '#9333ea',
+        'app-accent-contrast': '#ffffff',
         'app-border': '#334155',
         'app-border-light': '#1e293b',
-        'app-input-bg': '#1e293b'
+        'app-input-bg': '#1e293b',
+        'app-panel-rgb': '#1e293b',
+        'app-panel-border-rgb': '#ffffff'
     };
+    var DEFAULT_CUSTOM_META = { id: 'my_custom_theme', label: '내 커스텀 테마' };
 
     var customState = {
         colors: null,
+        meta: null,
         viewIndex: 0
     };
 
@@ -134,7 +147,32 @@
         '.mk-volume-thumb{width:1.6vw;height:2.2vw;border-radius:0.25vw;flex-shrink:0;}' +
         '.mk-volume-title{flex:1;font-size:0.58vw;color:var(--app-text-primary,#f1f5f9);opacity:0.9;}' +
         '.mk-progress-track{width:3.2vw;height:0.4vw;border-radius:999px;background:var(--app-border-light,#334155);overflow:hidden;flex-shrink:0;}' +
-        '.mk-progress-fill{height:100%;background:var(--app-accent,#a855f7);}';
+        '.mk-progress-fill{height:100%;background:var(--app-accent,#a855f7);}' +
+        '.mk-glass-panel{position:absolute;top:0.8vw;right:0.8vw;padding:0.3vw 0.6vw;border-radius:0.5vw;font-size:0.5vw;color:var(--app-text-primary,#f1f5f9);background:rgba(var(--app-panel-rgb,30,41,59),0.6);border:1px solid rgba(var(--app-panel-border-rgb,255,255,255),0.18);backdrop-filter:blur(4px);}' +
+        '.mk-main{position:relative;}';
+
+    function hexToRgbTriplet(hex) {
+        var m = /^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(hex || '');
+        if (!m) return '0, 0, 0';
+        return parseInt(m[1], 16) + ', ' + parseInt(m[2], 16) + ', ' + parseInt(m[3], 16);
+    }
+
+    function rgbTripletToHex(triplet) {
+        var parts = String(triplet || '').split(',').map(function (s) { return parseInt(s.trim(), 10) || 0; });
+        function toHex(n) { n = Math.max(0, Math.min(255, n)); var h = n.toString(16); return h.length === 1 ? '0' + h : h; }
+        if (parts.length < 3) return '#ffffff';
+        return '#' + toHex(parts[0]) + toHex(parts[1]) + toHex(parts[2]);
+    }
+
+    // colors 오브젝트는 UI 편의상 전부 hex로 저장하고, kind:'rgb' 토큰만 실제 CSS
+    // 변수로 내보낼 때 "R, G, B" 형식으로 변환한다 (README.md 실제 규격).
+    function buildVarsCssText(colors) {
+        return CUSTOM_TOKENS.map(function (t) {
+            var raw = colors[t.key] || DEFAULT_CUSTOM_COLORS[t.key];
+            var value = t.kind === 'rgb' ? hexToRgbTriplet(raw) : raw;
+            return '--' + t.key + ':' + value + ';';
+        }).join('');
+    }
 
     function buildMockupHtml(themeValue, view) {
         var cssLinks = CSS_HREFS.map(function (href) {
@@ -149,9 +187,7 @@
     }
 
     function buildCustomMockupHtml(colors, view) {
-        var varsCss = ':root{' + CUSTOM_TOKENS.map(function (t) {
-            return '--' + t.key + ':' + (colors[t.key] || DEFAULT_CUSTOM_COLORS[t.key]) + ';';
-        }).join('') + '}';
+        var varsCss = ':root{' + buildVarsCssText(colors) + '}';
         var body = view === 'detail' ? buildDetailMockupBody() : buildDashboardMockupBody();
         return (
             '<!DOCTYPE html><html>' +
@@ -186,6 +222,7 @@
             '<div class="mk-shell">' +
             buildSidebar(0) +
             '<div class="mk-main">' +
+            '<div class="mk-glass-panel">패널 (panel-rgb)</div>' +
             '<div class="mk-topbar">' +
             '<div class="mk-search">🔍 제목 · 시리즈 · 작가 검색...</div>' +
             '<div class="mk-toggle active">일반 도서</div>' +
@@ -439,8 +476,13 @@
                 var computed = win.getComputedStyle(doc.documentElement);
                 var colors = {};
                 CUSTOM_TOKENS.forEach(function (t) {
-                    var raw = computed.getPropertyValue('--' + t.key);
-                    var hex = normalizeToHex(doc, win, raw) || DEFAULT_CUSTOM_COLORS[t.key];
+                    var raw = computed.getPropertyValue('--' + t.key).trim();
+                    var hex;
+                    if (t.kind === 'rgb') {
+                        hex = raw ? rgbTripletToHex(raw) : DEFAULT_CUSTOM_COLORS[t.key];
+                    } else {
+                        hex = normalizeToHex(doc, win, raw) || DEFAULT_CUSTOM_COLORS[t.key];
+                    }
                     colors[t.key] = hex;
                 });
                 onDone(colors, null);
@@ -456,20 +498,47 @@
             '<head><meta charset="UTF-8">' + cssLinks + '</head><body></body></html>';
     }
 
-    // 아주 단순한 "key: value" 라인 파서 — YAML/JSON 모두 이 형태만 인식한다.
-    // colors: 섹션 들여쓰기 여부와 무관하게, CUSTOM_TOKENS의 키와 일치하는 줄만 값을 취한다.
-    function parseColorsFromText(text) {
+    // 단순 "key: value" 라인 파서 — README.md 실제 형식(id / label / vars 아래 키들)을 인식한다.
+    // vars의 각 키는 hex(#rrggbb) 또는 "R, G, B" 형식 둘 다 허용해서 유연하게 읽는다.
+    function parseThemeFileText(text) {
         var colors = {};
+        var meta = {};
         var lines = text.split(/\r?\n/);
+        var hexPattern = /^\s*"?([a-zA-Z0-9_-]+)"?\s*:\s*"?(#[0-9a-fA-F]{3,8})"?\s*,?\s*$/;
+        var rgbPattern = /^\s*"?([a-zA-Z0-9_-]+)"?\s*:\s*"?(\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3})"?\s*,?\s*$/;
+        var metaPattern = /^\s*(id|label)\s*:\s*"?([^"#]+?)"?\s*$/;
+
         lines.forEach(function (line) {
-            var m = line.match(/^\s*"?([a-zA-Z0-9_-]+)"?\s*:\s*"?(#[0-9a-fA-F]{3,8})"?\s*,?\s*$/);
-            if (!m) return;
-            var key = m[1];
-            var value = m[2];
-            var isKnown = CUSTOM_TOKENS.some(function (t) { return t.key === key; });
-            if (isKnown) colors[key] = value.length === 4 ? expandShortHex(value) : value;
+            if (/^\s*#/.test(line)) return; // 주석 줄은 건너뜀
+
+            var hm = line.match(hexPattern);
+            if (hm) {
+                var hKey = hm[1];
+                var isKnownHex = CUSTOM_TOKENS.some(function (t) { return t.key === hKey; });
+                if (isKnownHex) {
+                    var hv = hm[2];
+                    colors[hKey] = hv.length === 4 ? expandShortHex(hv) : hv;
+                    return;
+                }
+            }
+
+            var rm = line.match(rgbPattern);
+            if (rm) {
+                var rKey = rm[1];
+                var isKnownRgb = CUSTOM_TOKENS.some(function (t) { return t.key === rKey; });
+                if (isKnownRgb) {
+                    colors[rKey] = rgbTripletToHex(rm[2]);
+                    return;
+                }
+            }
+
+            var mm = line.match(metaPattern);
+            if (mm && (mm[1] === 'id' || mm[1] === 'label')) {
+                meta[mm[1]] = mm[2].trim();
+            }
         });
-        return colors;
+
+        return { colors: colors, meta: meta };
     }
 
     function expandShortHex(hex) {
@@ -484,8 +553,7 @@
         reader.onload = function () {
             try {
                 var text = String(reader.result || '');
-                var found = parseColorsFromText(text);
-                onDone(found, null);
+                onDone(parseThemeFileText(text), null);
             } catch (e) {
                 onDone(null, e);
             }
@@ -502,9 +570,39 @@
         if (type) el.classList.add(type);
     }
 
+    function sanitizeThemeId(raw) {
+        var lowered = String(raw || '').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        return lowered.slice(0, 32) || 'my_custom_theme';
+    }
+
+    function readCustomMeta() {
+        try {
+            var raw = localStorage.getItem(CUSTOM_META_STORAGE_KEY);
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            return {
+                id: sanitizeThemeId(parsed.id || DEFAULT_CUSTOM_META.id),
+                label: (parsed.label || DEFAULT_CUSTOM_META.label).slice(0, 60)
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeCustomMeta(meta) {
+        try { localStorage.setItem(CUSTOM_META_STORAGE_KEY, JSON.stringify(meta)); return true; } catch (e) { return false; }
+    }
+
+    function renderMetaFields() {
+        var idInput = document.getElementById('tc-meta-id');
+        var labelInput = document.getElementById('tc-meta-label');
+        if (idInput) idInput.value = customState.meta.id;
+        if (labelInput) labelInput.value = customState.meta.label;
+    }
+
     function mergeIntoCustomColors(partialColors) {
         var count = 0;
-        Object.keys(partialColors).forEach(function (key) {
+        Object.keys(partialColors || {}).forEach(function (key) {
             var isKnown = CUSTOM_TOKENS.some(function (t) { return t.key === key; });
             if (isKnown && partialColors[key]) {
                 customState.colors[key] = partialColors[key];
@@ -516,6 +614,13 @@
         return count;
     }
 
+    function mergeIntoCustomMeta(partialMeta) {
+        if (!partialMeta) return;
+        if (partialMeta.id) customState.meta.id = sanitizeThemeId(partialMeta.id);
+        if (partialMeta.label) customState.meta.label = partialMeta.label;
+        renderMetaFields();
+    }
+
     // 실제 페이지(:root)에 커스텀 색을 주입 — 코어가 'custom' 값을 인식하지 못하므로
     // data-app-theme 속성이 아니라 인라인 <style>로 변수를 직접 덮어써서 적용한다.
     function applyCustomOverrideToPage(colors) {
@@ -525,14 +630,13 @@
             styleEl.id = 'tp-custom-theme-style';
             document.head.appendChild(styleEl);
         }
-        styleEl.textContent = ':root{' + CUSTOM_TOKENS.map(function (t) {
-            return '--' + t.key + ':' + (colors[t.key] || DEFAULT_CUSTOM_COLORS[t.key]) + ';';
-        }).join('') + '}';
+        styleEl.textContent = ':root{' + buildVarsCssText(colors) + '}';
     }
 
     function applyCustomTheme() {
         var ok1 = writeCustomColors(customState.colors);
         var ok2 = writeSavedTheme('custom');
+        writeCustomMeta(customState.meta);
         if (!ok1 || !ok2) {
             setCustomStatus('저장 실패: 이 브라우저에서 로컬 저장소를 사용할 수 없습니다.', 'is-error');
             return;
@@ -551,17 +655,21 @@
     }
 
     function exportCustomThemeYaml() {
+        var id = sanitizeThemeId(customState.meta.id);
+        var label = customState.meta.label || DEFAULT_CUSTOM_META.label;
+        var idCollides = BUILTIN_IDS.indexOf(id) !== -1;
+
         var lines = [
             '# BookOasis 커스텀 테마 — theme_previewer 플러그인에서 생성',
-            '# 주의: 이 YAML 형식은 CSS 변수 이름을 근거로 한 추정치입니다.',
-            '# themes/ 폴더에 넣기 전, 반드시 서버의 themes/README.md 에 적힌',
-            '# 정확한 필드명/형식과 대조해 확인하세요.',
-            'name: "내 커스텀 테마"',
-            'author: "me"',
-            'colors:'
+            '# themes/README.md 실제 규격(id / label / vars, vars 15개 키 고정)에 맞춰 작성됨.',
+            'id: ' + id,
+            'label: "' + label.replace(/"/g, '\\"') + '"',
+            'vars:'
         ];
         CUSTOM_TOKENS.forEach(function (t) {
-            lines.push('  ' + t.key + ': "' + customState.colors[t.key] + '"');
+            var raw = customState.colors[t.key] || DEFAULT_CUSTOM_COLORS[t.key];
+            var value = t.kind === 'rgb' ? hexToRgbTriplet(raw) : raw;
+            lines.push('  ' + t.key + ': "' + value + '"');
         });
         var text = lines.join('\n') + '\n';
 
@@ -569,13 +677,17 @@
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'my-custom-theme.yaml';
+        a.download = id + '.yaml';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        setCustomStatus('my-custom-theme.yaml 파일을 내보냈습니다. themes/README.md 규격과 대조해 확인 후 서버의 themes/ 폴더에 넣어주세요.', null);
+        if (idCollides) {
+            setCustomStatus(id + '.yaml 파일을 내보냈습니다. 단, id "' + id + '"는 내장 테마와 겹치므로 서버가 거부합니다 — id를 바꿔서 다시 내보내주세요.', 'is-error');
+        } else {
+            setCustomStatus(id + '.yaml 파일을 내보냈습니다. 서버의 themes/ 폴더에 넣고 설정 > 일반 탭의 "커스텀 테마 다시 스캔"을 눌러주세요.', 'is-success');
+        }
     }
 
     // ================= 탭 전환 =================
@@ -612,8 +724,25 @@
 
         // 커스텀 테마 탭 초기화
         customState.colors = readCustomColors() || Object.assign({}, DEFAULT_CUSTOM_COLORS);
+        customState.meta = readCustomMeta() || Object.assign({}, DEFAULT_CUSTOM_META);
         renderColorFields();
+        renderMetaFields();
         renderCustomPreviewFrame();
+
+        var metaIdInput = document.getElementById('tc-meta-id');
+        var metaLabelInput = document.getElementById('tc-meta-label');
+        if (metaIdInput) {
+            metaIdInput.addEventListener('input', function () { customState.meta.id = metaIdInput.value; });
+            metaIdInput.addEventListener('blur', function () {
+                customState.meta.id = sanitizeThemeId(metaIdInput.value);
+                metaIdInput.value = customState.meta.id;
+            });
+        }
+        if (metaLabelInput) {
+            metaLabelInput.addEventListener('input', function () {
+                customState.meta.label = metaLabelInput.value.slice(0, 60);
+            });
+        }
 
         // "기존 테마에서 색 불러오기" 드롭다운 채우기
         var importSelect = document.getElementById('tc-import-theme-select');
@@ -645,18 +774,21 @@
                 var file = importFileInput.files && importFileInput.files[0];
                 if (!file) return;
                 setImportStatus('파일을 읽는 중...', null);
-                importFromFile(file, function (colors, err) {
+                importFromFile(file, function (result, err) {
                     if (err) {
                         setImportStatus('파일을 읽지 못했습니다: ' + err, 'is-error');
                         return;
                     }
-                    var count = Object.keys(colors || {}).length;
-                    if (count === 0) {
-                        setImportStatus('이 파일에서 인식 가능한 색상 값을 찾지 못했습니다. "app-accent: #rrggbb" 형태의 줄이 있는지 확인해 주세요.', 'is-error');
+                    var colors = (result && result.colors) || {};
+                    var meta = (result && result.meta) || {};
+                    var count = Object.keys(colors).length;
+                    if (count === 0 && !meta.id && !meta.label) {
+                        setImportStatus('이 파일에서 인식 가능한 값을 찾지 못했습니다. "app-accent: #rrggbb" 같은 줄이 있는지 확인해 주세요.', 'is-error');
                         return;
                     }
                     mergeIntoCustomColors(colors);
-                    setImportStatus('파일에서 색상 ' + count + '개를 불러왔습니다.', 'is-success');
+                    mergeIntoCustomMeta(meta);
+                    setImportStatus('파일에서 색상 ' + count + '개를 불러왔습니다' + (meta.id ? ' (id: ' + meta.id + ')' : '') + '.', 'is-success');
                 });
                 importFileInput.value = '';
             });
